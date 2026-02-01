@@ -147,7 +147,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             case 'trainingVideos':
                 return value && value.length > 0 && (
                     <div className="mt-4">
-                        <h4 className="font-semibold text-sm mb-2 text-left" style={{ color: labelColor }}>Training Videos:</h4>
+                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Training Videos:</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                             {value.map((video: {url: string, thumbnailUrl: string}, i: number) => (
                                 <button key={i} onClick={(e) => { e.stopPropagation(); onPlayVideo(video.url); }} className="inline-block text-center relative group" aria-label={`Play training video ${i + 1}`}>
@@ -163,7 +163,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             case 'documentation':
                 return value && (
                     <div className="mt-4 pt-2 border-t border-gray-200">
-                        <h4 className="font-semibold text-sm mb-2 text-left" style={{ color: labelColor }}>Documentation:</h4>
+                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Documentation:</h4>
                         <a href={value} target="_blank" rel="noopener noreferrer" className="inline-block p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
                             <FolderIcon />
                         </a>
@@ -172,10 +172,10 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             case 'links':
                 return value && value.length > 0 && (
                     <div className="mt-4 pt-2 border-t border-gray-200">
-                        <h4 className="font-semibold text-sm mb-2 text-left" style={{ color: labelColor }}>Links:</h4> 
+                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Links:</h4> 
                         <div className="flex flex-wrap gap-2">
                             {value.map((link: {name: string, url: string}, i: number) => (
-                                <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm text-center transition-colors shadow">
+                                <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-lg text-center transition-colors shadow">
                                     {link.name}
                                 </a>
                             ))}
@@ -185,10 +185,10 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             case 'resources':
                 return value && value.length > 0 && (
                     <div className="mt-4 pt-2 border-t border-gray-200">
-                        <h4 className="font-semibold text-sm mb-2 text-left" style={{ color: labelColor }}>Resources:</h4>
+                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Resources:</h4>
                         <div className="flex flex-wrap gap-2">
                             {value.map((resource: {name: string, url: string}, i: number) => (
-                                <a key={i} href={resource.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm text-center transition-colors shadow">
+                                <a key={i} href={resource.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-lg text-center transition-colors shadow">
                                     {resource.name}
                                 </a>
                             ))}
@@ -198,10 +198,10 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             case 'internalLinks':
                 return value && value.length > 0 && (
                     <div className="mt-4 pt-2 border-t border-gray-200">
-                        <h4 className="font-semibold text-sm mb-2 text-left" style={{ color: labelColor }}>Internal Links:</h4>
+                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Internal Links:</h4>
                         <div className="flex flex-wrap gap-2">
                             {value.map((link: {name: string, targetTileId: string}, i: number) => (
-                                <button key={i} onClick={(e) => { e.stopPropagation(); onNavigateToTile(link.targetTileId); }} className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-sm text-center transition-colors shadow">
+                                <button key={i} onClick={(e) => { e.stopPropagation(); onNavigateToTile(link.targetTileId); }} className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg text-center transition-colors shadow">
                                     {link.name}
                                 </button>
                             ))}
@@ -292,7 +292,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                         )}
                         {isBuilderMode && tile.children && tile.children.length > 0 && (
                             <span 
-                                className={`text-sm font-semibold px-2 py-1 rounded-full ${!tile.isVisible.color ? 'bg-blue-100 text-blue-800' : ''}`} 
+                                className={`text-lg font-semibold px-2 py-1 rounded-full ${!tile.isVisible.color ? 'bg-blue-100 text-blue-800' : ''}`} 
                                 style={tile.isVisible.color ? badgeStyle : {}}
                                 aria-label={`${tile.children.length} child items`}
                             >

@@ -114,21 +114,21 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         if(isVisible.overviewVideo && tile.overviewVideo) { content.push(h('div', {key:'overview', className:"mt-4 text-center"}, h('button', {onClick: (e: any) => {e.stopPropagation(); onPlayVideo(tile.overviewVideo)}, className:"inline-block relative group"}, h('img', {src:tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale", alt:"Overview", className:"rounded-md shadow-md"}), h('div', {className:"absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity"}, h(PlayIcon, {className:"w-12 h-12 text-white"}))))); }
         if(isVisible.trainingVideos && tile.trainingVideos && tile.trainingVideos.length > 0) {
             content.push(h('div', {key: 'training', className:"mt-4"},
-                h('h4', {className:"font-semibold text-sm mb-2 text-left", style:{color:labelColor}}, "Training Videos:"),
+                h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, "Training Videos:"),
                 h('div', {className:"grid grid-cols-2 sm:grid-cols-3 gap-2"},
                     tile.trainingVideos.map((v: any, i: number) => h('button', {key: i, onClick: (e: any) => {e.stopPropagation(); onPlayVideo(v.url)}, className:"inline-block relative group"}, h('img', {src:v.thumbnailUrl || `https://picsum.photos/100/60?grayscale&random=${i}`, alt:`Training ${i+1}`, className:"rounded-md shadow-sm w-full"}), h('div', {className:"absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity"}, h(PlayIcon, {className:"w-8 h-8 text-white"}))))
                 )
             ));
         }
-        if(isVisible.documentation && tile.documentation) { content.push(h('div', {key:'docs', className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-sm mb-2 text-left", style:{color:labelColor}}, "Documentation:"), h('a', {href:tile.documentation, target:"_blank", rel:"noopener noreferrer", className:"inline-block p-2 rounded-full bg-gray-100 hover:bg-gray-200"}, h(FolderIcon)))); }
+        if(isVisible.documentation && tile.documentation) { content.push(h('div', {key:'docs', className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, "Documentation:"), h('a', {href:tile.documentation, target:"_blank", rel:"noopener noreferrer", className:"inline-block p-2 rounded-full bg-gray-100 hover:bg-gray-200"}, h(FolderIcon)))); }
         const renderLinks = (list: any, title: string, colorClass: string, key: string) => {
             if (isVisible[key] && list && list.length > 0) {
-                return h('div', {key:key, className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-sm mb-2 text-left", style:{color:labelColor}}, title), h('div', {className:"flex flex-wrap gap-2"}, list.map((l: any, i: number) => h('a', {key: i, href: l.url, target: "_blank", rel: "noopener noreferrer", className: `px-3 py-1 ${colorClass} text-white rounded-md hover:opacity-90 text-sm shadow`}, l.name))));
+                return h('div', {key:key, className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, title), h('div', {className:"flex flex-wrap gap-2"}, list.map((l: any, i: number) => h('a', {key: i, href: l.url, target: "_blank", rel: "noopener noreferrer", className: `px-3 py-1 ${colorClass} text-white rounded-md hover:opacity-90 text-lg shadow`}, l.name))));
             } return null;
         }
         content.push(renderLinks(tile.links, "Links:", "bg-blue-500", "links"));
         content.push(renderLinks(tile.resources, "Resources:", "bg-green-500", "resources"));
-        if (isVisible.internalLinks && tile.internalLinks && tile.internalLinks.length > 0) { content.push(h('div', {key:"internal", className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-sm mb-2 text-left", style:{color:labelColor}}, "Internal Links:"), h('div', {className:"flex flex-wrap gap-2"}, tile.internalLinks.map((l: any, i: number) => h('button', {key:i, onClick:(e: any)=>{e.stopPropagation(); onNavigateToTile(l.targetTileId)}, className:"px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-sm shadow"}, l.name))))); }
+        if (isVisible.internalLinks && tile.internalLinks && tile.internalLinks.length > 0) { content.push(h('div', {key:"internal", className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, "Internal Links:"), h('div', {className:"flex flex-wrap gap-2"}, tile.internalLinks.map((l: any, i: number) => h('button', {key:i, onClick:(e: any)=>{e.stopPropagation(); onNavigateToTile(l.targetTileId)}, className:"px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg shadow"}, l.name))))); }
 
         const heightAspectClass = useLogoBg ? 'aspect-square' : isSimpleButtonTile ? 'aspect-square sm:aspect-auto' : 'sm:min-h-[450px]';
         const tileClasses = `rounded-lg shadow-lg flex flex-col relative transition-transform duration-150 w-full cursor-pointer hover:scale-105 ${heightAspectClass} ${isSimpleButtonTile ? "" : "justify-between"} ${isAnimating ? "tile-highlight-pulse" : ""}`;
@@ -210,7 +210,7 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         const handleGoHome = useCallback(() => { setCurrentPath([]); setHistory(prev => [...prev, []]); _internalOnNavigate({ path: [], tile: null }); }, [_internalOnNavigate]);
         const handlePlayVideo = useCallback((url: string) => { if (!url) return; const embedUrl = getEmbedUrl(url); if (embedUrl) { setVideoUrl(embedUrl); } else { window.open(url, '_blank', 'noopener,noreferrer'); } }, []);
         const handleCloseVideo = useCallback(() => setVideoUrl(null), []);
-        const isTileVisible = useCallback((tile: any) => { if (!tile.accessTags || tile.accessTags.length === 0) return true; if (accessTags.length === 0) return false; return tile.accessTags.some((tag: string) => accessTags.includes(tag)); }, [accessTags]);
+        const isTileVisible = useCallback((tile: any) => { if (!tile.accessTags || tile.accessTags.length === 0) return true; if (tile.accessTags.includes('all')) return true; if (accessTags.length === 0) return false; return tile.accessTags.some((tag: string) => accessTags.includes(tag)); }, [accessTags]);
 
         const getTilesToDisplay = useCallback(() => {
             let tiles = siteData.tiles;
