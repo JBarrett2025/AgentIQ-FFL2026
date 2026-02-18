@@ -46,7 +46,7 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
     };
 
     const darkenColor = (hex: string, percent: number) => { if (!hex || typeof hex !== 'string') return '#cccccc'; hex = hex.replace(/^#/, ''); if (hex.length === 3) hex = hex.split('').map(c => c + c).join(''); if (hex.length !== 6) return '#cccccc'; let r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16); const factor = 1 - percent / 100; r = Math.floor(r * factor); g = Math.floor(g * factor); b = Math.floor(b * factor); r = Math.max(0, r); g = Math.max(0, g); b = Math.max(0, b); const toHex = (c: number) => c.toString(16).padStart(2, '0'); return `#${toHex(r)}${toHex(g)}${toHex(b)}`; };
-    
+
     const getEmbedUrl = (url: string) => {
         if (!url) return null;
         const origin = (typeof window !== 'undefined' && window.location.origin !== 'null') ? window.location.origin : 'https://example.com';
@@ -54,20 +54,20 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         const youtubeMatch = url.match(youtubeRegex);
         const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/;
         const vimeoMatch = url.match(vimeoRegex);
-    
+
         if (youtubeMatch && youtubeMatch[1]) { return `https://www.youtube.com/embed/${youtubeMatch[1]}?origin=${encodeURIComponent(origin)}`; }
         if (vimeoMatch && vimeoMatch[1]) { return `https://player.vimeo.com/video/${vimeoMatch[1]}`; }
         if (url.includes('youtube.com/embed/') && !url.includes('origin=')) { return `${url}${url.includes('?') ? '&' : '?'}origin=${encodeURIComponent(origin)}`; }
         return url;
     };
-    
-    const PreviousArrowIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M11 17l-5-5m0 0l5-5m-5 5h12" }));
-    const HomeIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-7 4h6" }));
-    const FolderIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-8 w-8 text-gray-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2}, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" }));
-    const PlayIcon = ({className}: any) => h('svg', { className, fill: "currentColor", viewBox: "0 0 20 20" }, h('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z", clipRule: "evenodd" }));
-    const NextArrowIcon = ({className}: any) => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: className || "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M13 7l5 5m0 0l-5 5m5-5H6" }));
 
-    const DeployedVideoPlayer = ({ url, onClose }: any) => { useEffect(() => { const l = (e: any) => e.key === 'Escape' && onClose(); document.addEventListener('keydown', l); return () => document.removeEventListener('keydown', l); }, [onClose]); return h('div', { className: "fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[9999]", onClick: onClose, role: "dialog", "aria-modal": "true" }, h('div', { className: "bg-black w-full max-w-4xl relative shadow-2xl rounded-lg", style: { aspectRatio: '16 / 9' }, onClick: (e: any) => e.stopPropagation() }, h('iframe', { src: url, width: "100%", height: "100%", allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, title: "Embedded Video Player", className: "rounded-lg" }), h('button', { onClick: onClose, className: "absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-600 text-white text-xl flex items-center justify-center" }, '×')));};
+    const PreviousArrowIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-8 w-8", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M11 17l-5-5m0 0l5-5m-5 5h12" }));
+    const HomeIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-8 w-8", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-7 4h6" }));
+    const FolderIcon = () => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: "h-8 w-8 text-gray-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" }));
+    const PlayIcon = ({ className }: any) => h('svg', { className, fill: "currentColor", viewBox: "0 0 20 20" }, h('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z", clipRule: "evenodd" }));
+    const NextArrowIcon = ({ className }: any) => h('svg', { xmlns: "http://www.w3.org/2000/svg", className: className || "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 }, h('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M13 7l5 5m0 0l-5 5m5-5H6" }));
+
+    const DeployedVideoPlayer = ({ url, onClose }: any) => { useEffect(() => { const l = (e: any) => e.key === 'Escape' && onClose(); document.addEventListener('keydown', l); return () => document.removeEventListener('keydown', l); }, [onClose]); return h('div', { className: "fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[9999]", onClick: onClose, role: "dialog", "aria-modal": "true" }, h('div', { className: "bg-black w-full max-w-4xl relative shadow-2xl rounded-lg", style: { aspectRatio: '16 / 9' }, onClick: (e: any) => e.stopPropagation() }, h('iframe', { src: url, width: "100%", height: "100%", allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, title: "Embedded Video Player", className: "rounded-lg" }), h('button', { onClick: onClose, className: "absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-600 text-white text-xl flex items-center justify-center" }, '×'))); };
 
     const DeployedTileDisplay = ({ tile, onNavigateToChildren, onNavigateToTile, onPlayVideo, _internalOnTileClick, isHighlighted, onHighlightComplete }: any) => {
         const tileRef = useRef(null);
@@ -76,59 +76,59 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         useEffect(() => {
             if (isHighlighted && tileRef.current) {
                 (tileRef.current as any).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
+
                 const scrollTimeout = setTimeout(() => {
                     setIsAnimating(true);
-                    
+
                     const animationTimeout = setTimeout(() => {
                         setIsAnimating(false);
                         if (onHighlightComplete) {
                             onHighlightComplete();
                         }
                     }, 7500);
-                    
+
                     return () => clearTimeout(animationTimeout);
                 }, 300);
-    
+
                 return () => clearTimeout(scrollTimeout);
             }
         }, [isHighlighted, onHighlightComplete]);
 
         const isVisible = { ...defaultIsVisible, ...tile.isVisible };
         const isSimpleButtonTile = tile.logoUrl && !tile.useLogoAsBackground && (!tile.description || !isVisible.description) && (!tile.overviewVideo || !isVisible.overviewVideo) && (!tile.trainingVideos?.length || !isVisible.trainingVideos);
-        const getFontColor = (hex: string) => { if (!hex || hex.length < 7) return '#333'; try { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 160 ? '#333333' : '#FFFFFF'; } catch(e) { return '#333'; } };
+        const getFontColor = (hex: string) => { if (!hex || hex.length < 7) return '#333'; try { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 160 ? '#333333' : '#FFFFFF'; } catch (e) { return '#333'; } };
         const textColor = getFontColor(tile.color);
         const labelColor = isVisible.color ? textColor : '#374151';
         const useLogoBg = tile.useLogoAsBackground && tile.logoUrl;
-        
+
         const tileStyle: any = { fontFamily: isVisible.font ? tile.font + ', sans-serif' : 'inherit', backgroundColor: isVisible.color ? tile.color : '#FFFFFF' };
-        if (useLogoBg) { Object.assign(tileStyle, { backgroundImage: `url('${tile.logoUrl}')`, backgroundSize: 'contain', backgroundPosition: 'center center', backgroundRepeat: 'no-repeat'}); }
+        if (useLogoBg) { Object.assign(tileStyle, { backgroundImage: `url('${tile.logoUrl}')`, backgroundSize: 'contain', backgroundPosition: 'center center', backgroundRepeat: 'no-repeat' }); }
         tileStyle.border = `6px solid ${isVisible.color ? darkenColor(tile.color, 15) : '#E5E7EB'}`;
-        
+
         const mainClickAction = () => { _internalOnTileClick(tile); if (tile.children && tile.children.length > 0) onNavigateToChildren(tile.id); };
 
         const content: any[] = [];
-        if(isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', {key: 'logo', className: "mb-4 h-24 flex items-center justify-center"}, h('img', { src: tile.logoUrl, alt: `${tile.name} Logo`, className:"max-h-24 mx-auto object-contain" }))); }
-        if(isVisible.name) { content.push(h('h3', {key:'name', className:"text-2xl font-semibold text-center", style:{color: isVisible.color ? textColor : '#333'}}, tile.name)); }
-        if(isVisible.description && tile.description) { content.push(h('p', {key:'desc', className:"text-md mt-2 text-center", style:{color:isVisible.color ? textColor : '#4B5563'}}, tile.description)); }
-        if(isVisible.overviewVideo && tile.overviewVideo) { content.push(h('div', {key:'overview', className:"mt-4 text-center"}, h('button', {onClick: (e: any) => {e.stopPropagation(); onPlayVideo(tile.overviewVideo)}, className:"inline-block relative group"}, h('img', {src:tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale", alt:"Overview", className:"rounded-md shadow-md"}), h('div', {className:"absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity"}, h(PlayIcon, {className:"w-12 h-12 text-white"}))))); }
-        if(isVisible.trainingVideos && tile.trainingVideos && tile.trainingVideos.length > 0) {
-            content.push(h('div', {key: 'training', className:"mt-4"},
-                h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, "Training Videos:"),
-                h('div', {className:"grid grid-cols-2 sm:grid-cols-3 gap-2"},
-                    tile.trainingVideos.map((v: any, i: number) => h('button', {key: i, onClick: (e: any) => {e.stopPropagation(); onPlayVideo(v.url)}, className:"inline-block relative group"}, h('img', {src:v.thumbnailUrl || `https://picsum.photos/100/60?grayscale&random=${i}`, alt:`Training ${i+1}`, className:"rounded-md shadow-sm w-full"}), h('div', {className:"absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity"}, h(PlayIcon, {className:"w-8 h-8 text-white"}))))
+        if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${tile.name} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
+        if (isVisible.name) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, tile.name)); }
+        if (isVisible.description && tile.description) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, tile.description)); }
+        if (isVisible.overviewVideo && tile.overviewVideo) { content.push(h('div', { key: 'overview', className: "mt-4 text-center" }, h('button', { onClick: (e: any) => { e.stopPropagation(); onPlayVideo(tile.overviewVideo) }, className: "inline-block relative group" }, h('img', { src: tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale", alt: "Overview", className: "rounded-md shadow-md" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-12 h-12 text-white" }))))); }
+        if (isVisible.trainingVideos && tile.trainingVideos && tile.trainingVideos.length > 0) {
+            content.push(h('div', { key: 'training', className: "mt-4" },
+                h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, "Training Videos:"),
+                h('div', { className: "grid grid-cols-2 sm:grid-cols-3 gap-2" },
+                    tile.trainingVideos.map((v: any, i: number) => h('button', { key: i, onClick: (e: any) => { e.stopPropagation(); onPlayVideo(v.url) }, className: "inline-block relative group" }, h('img', { src: v.thumbnailUrl || `https://picsum.photos/100/60?grayscale&random=${i}`, alt: `Training ${i + 1}`, className: "rounded-md shadow-sm w-full" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-8 h-8 text-white" }))))
                 )
             ));
         }
-        if(isVisible.documentation && tile.documentation) { content.push(h('div', {key:'docs', className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, "Documentation:"), h('a', {href:tile.documentation, target:"_blank", rel:"noopener noreferrer", className:"inline-block p-2 rounded-full bg-gray-100 hover:bg-gray-200"}, h(FolderIcon)))); }
+        if (isVisible.documentation && tile.documentation) { content.push(h('div', { key: 'docs', className: "mt-4 pt-2 border-t" }, h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, "Documentation:"), h('a', { href: tile.documentation, target: "_blank", rel: "noopener noreferrer", className: "inline-block p-2 rounded-full bg-gray-100 hover:bg-gray-200" }, h(FolderIcon)))); }
         const renderLinks = (list: any, title: string, colorClass: string, key: string) => {
             if (isVisible[key] && list && list.length > 0) {
-                return h('div', {key:key, className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, title), h('div', {className:"flex flex-wrap gap-2"}, list.map((l: any, i: number) => h('a', {key: i, href: l.url, target: "_blank", rel: "noopener noreferrer", className: `px-3 py-1 ${colorClass} text-white rounded-md hover:opacity-90 text-lg shadow`}, l.name))));
+                return h('div', { key: key, className: "mt-4 pt-2 border-t" }, h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, title), h('div', { className: "flex flex-wrap gap-2" }, list.map((l: any, i: number) => h('a', { key: i, href: l.url, target: "_blank", rel: "noopener noreferrer", className: `px-3 py-1 ${colorClass} text-white rounded-md hover:opacity-90 text-lg shadow` }, l.name))));
             } return null;
         }
         content.push(renderLinks(tile.links, "Links:", "bg-blue-500", "links"));
         content.push(renderLinks(tile.resources, "Resources:", "bg-green-500", "resources"));
-        if (isVisible.internalLinks && tile.internalLinks && tile.internalLinks.length > 0) { content.push(h('div', {key:"internal", className:"mt-4 pt-2 border-t"}, h('h4', {className:"font-semibold text-lg mb-2 text-left", style:{color:labelColor}}, "Internal Links:"), h('div', {className:"flex flex-wrap gap-2"}, tile.internalLinks.map((l: any, i: number) => h('button', {key:i, onClick:(e: any)=>{e.stopPropagation(); onNavigateToTile(l.targetTileId)}, className:"px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg shadow"}, l.name))))); }
+        if (isVisible.internalLinks && tile.internalLinks && tile.internalLinks.length > 0) { content.push(h('div', { key: "internal", className: "mt-4 pt-2 border-t" }, h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, "Internal Links:"), h('div', { className: "flex flex-wrap gap-2" }, tile.internalLinks.map((l: any, i: number) => h('button', { key: i, onClick: (e: any) => { e.stopPropagation(); onNavigateToTile(l.targetTileId) }, className: "px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg shadow" }, l.name))))); }
 
         const heightAspectClass = useLogoBg ? 'aspect-square' : isSimpleButtonTile ? 'aspect-square sm:aspect-auto' : 'sm:min-h-[450px]';
         const tileClasses = `rounded-lg shadow-lg flex flex-col relative transition-transform duration-150 w-full cursor-pointer hover:scale-105 ${heightAspectClass} ${isSimpleButtonTile ? "" : "justify-between"} ${isAnimating ? "tile-highlight-pulse" : ""}`;
@@ -141,29 +141,29 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
                 },
                 className: "absolute top-2 right-2 z-30 p-2 bg-white/70 backdrop-blur-sm rounded-full text-blue-600 hover:bg-white hover:text-blue-800 shadow-md transition-all",
                 "aria-label": "Go to next tile"
-            }, h(NextArrowIcon, {className: "h-5 w-5"})),
-            h('div', { className: `relative flex flex-col flex-grow ${useLogoBg ? 'p-12' : 'p-4'}`},
+            }, h(NextArrowIcon, { className: "h-5 w-5" })),
+            h('div', { className: `relative flex flex-col flex-grow ${useLogoBg ? 'p-12' : 'p-4'}` },
                 h('div', { className: `flex-grow ${isSimpleButtonTile ? 'flex flex-col items-center justify-center text-center' : ''}` }, ...content)
             )
         );
     };
 
-    const DeployedApp = forwardRef(({ initialAccessTags = [], _internalOnTileClick = (tile: any) => {}, _internalOnNavigate = (data: any) => {}, _internalOnReady = () => {} }: any, ref: any) => {
+    const DeployedApp = forwardRef(({ initialAccessTags = [], _internalOnTileClick = (_tile: any) => { }, _internalOnNavigate = (_data: any) => { }, _internalOnReady = () => { } }: any, ref: any) => {
         const [currentPath, setCurrentPath] = useState([] as string[]);
         const [history, setHistory] = useState([[]] as string[][]);
         const [videoUrl, setVideoUrl] = useState(null);
         const [accessTags, setAccessTags] = useState(initialAccessTags);
         const [highlightedTileId, setHighlightedTileId] = useState(null);
-    
+
         const allTiles = useMemo(() => {
             const tileMap = new Map();
-            const processTiles = (tiles: any[]) => { tiles.forEach(t => { tileMap.set(t.id, t); if(t.children) processTiles(t.children); }); };
+            const processTiles = (tiles: any[]) => { tiles.forEach(t => { tileMap.set(t.id, t); if (t.children) processTiles(t.children); }); };
             processTiles(siteData.tiles);
             return tileMap;
         }, []);
-    
+
         const findTileById = useCallback((id: string) => allTiles.get(id), [allTiles]);
-        
+
         const findPathToTile = (id: string, tiles: any[] = siteData.tiles, path: string[] = []): any => {
             for (const tile of tiles) {
                 const newPath = [...path, tile.id];
@@ -175,20 +175,20 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
             }
             return null;
         };
-    
+
         const handleNavigateToChildren = useCallback((tileId: string) => {
             const newPath = [...currentPath, tileId];
             setCurrentPath(newPath);
-            setHistory(prev => [...prev, newPath]);
+            setHistory((prev: string[][]) => [...prev, newPath]);
             _internalOnNavigate({ path: newPath, tile: findTileById(tileId) });
         }, [currentPath, _internalOnNavigate, findTileById]);
-    
+
         const handleNavigateToTile = useCallback((tileId: string) => {
             const path = findPathToTile(tileId);
             if (path) {
                 const parentPath = path.slice(0, -1);
                 setCurrentPath(parentPath);
-                setHistory(prev => [...prev, parentPath]);
+                setHistory((prev: string[][]) => [...prev, parentPath]);
                 setHighlightedTileId(tileId);
                 _internalOnNavigate({ path: parentPath, tile: findTileById(parentPath[parentPath.length - 1] || tileId) });
             } else { console.warn(`Tile not found: ${tileId}`); }
@@ -204,10 +204,10 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
             setHistory(newHistory);
             const newPath = newHistory[newHistory.length - 1] || [];
             setCurrentPath(newPath);
-            _internalOnNavigate({ path: newPath, tile: findTileById(newPath[newPath.length-1]) });
+            _internalOnNavigate({ path: newPath, tile: findTileById(newPath[newPath.length - 1]) });
         }, [history, _internalOnNavigate, findTileById]);
 
-        const handleGoHome = useCallback(() => { setCurrentPath([]); setHistory(prev => [...prev, []]); _internalOnNavigate({ path: [], tile: null }); }, [_internalOnNavigate]);
+        const handleGoHome = useCallback(() => { setCurrentPath([]); setHistory((prev: string[][]) => [...prev, []]); _internalOnNavigate({ path: [], tile: null }); }, [_internalOnNavigate]);
         const handlePlayVideo = useCallback((url: string) => { if (!url) return; const embedUrl = getEmbedUrl(url); if (embedUrl) { setVideoUrl(embedUrl); } else { window.open(url, '_blank', 'noopener,noreferrer'); } }, []);
         const handleCloseVideo = useCallback(() => setVideoUrl(null), []);
         const isTileVisible = useCallback((tile: any) => { if (!tile.accessTags || tile.accessTags.length === 0) return true; if (tile.accessTags.includes('all')) return true; if (accessTags.length === 0) return false; return tile.accessTags.some((tag: string) => accessTags.includes(tag)); }, [accessTags]);
@@ -221,37 +221,38 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
             }
             return tiles.filter(isTileVisible);
         }, [currentPath, findTileById, siteData.tiles, isTileVisible, _internalOnNavigate]);
-        
+
         useImperativeHandle(ref, () => ({
             navigateToTile: (id: string) => { handleNavigateToTile(id); },
             navigateToHome: () => { handleGoHome(); },
             goBack: () => { handleGoToPrevious(); },
             getCurrentPath: () => currentPath,
-            setAccessTags: (tags: string[]) => { if(Array.isArray(tags)) setAccessTags(tags.map(String)); else console.error('setAccessTags expects an array of strings.'); },
+            setAccessTags: (tags: string[]) => { if (Array.isArray(tags)) setAccessTags(tags.map(String)); else console.error('setAccessTags expects an array of strings.'); },
         }));
 
         useEffect(() => { _internalOnReady(); }, [_internalOnReady]);
 
         const sanitizedHeader = useMemo(() => sanitizeHTML(siteData.headerContent), [siteData.headerContent]);
-        const sanitizedFooter = useMemo(() => sanitizeHTML(siteData.footerContent), [siteData.footerContent]);
+        // const sanitizedFooter = useMemo(() => sanitizeHTML(siteData.footerContent), [siteData.footerContent]);
         const tilesToDisplay = getTilesToDisplay();
-        
-        const header = h('header', {className: "bg-white shadow-md py-4 md:py-6 mb-10"},
-            h('div', {className: "container mx-auto px-4 sm:px-6 grid grid-cols-3 items-center gap-4"},
-                h('div', {className: "flex items-center space-x-2 justify-self-start"},
-                    history.length > 1 && h('button', {onClick:handleGoToPrevious, className:"text-blue-600 hover:text-blue-800 transition-colors flex items-center text-lg p-2 rounded-md"}, h(PreviousArrowIcon), h('span', {className:"ml-2 hidden sm:inline"}, "Previous")),
-                    currentPath.length > 0 && h('button', {onClick:handleGoHome, className:"text-blue-600 hover:text-blue-800 transition-colors flex items-center text-lg p-2 rounded-md"}, h(HomeIcon), h('span', {className:"ml-2 hidden sm:inline"}, "Home"))
+
+        const header = h('header', { className: "bg-white shadow-md py-4 md:py-6 mb-10" },
+            h('div', { className: "w-full px-4 sm:px-6 grid grid-cols-3 items-center gap-4" },
+                h('div', { className: "flex items-center space-x-2 justify-self-start" },
+                    history.length > 1 && h('button', { onClick: handleGoToPrevious, className: "text-blue-600 hover:text-blue-800 transition-colors flex items-center text-xl p-2 rounded-md" }, h(PreviousArrowIcon), h('span', { className: "ml-2 hidden sm:inline" }, "Previous")),
+                    currentPath.length > 0 && h('button', { onClick: handleGoHome, className: "text-blue-600 hover:text-blue-800 transition-colors flex items-center text-xl p-2 rounded-md" }, h(HomeIcon), h('span', { className: "ml-2 hidden sm:inline" }, "Home"))
                 ),
-                h('div', {className:"min-w-0 text-center col-start-2 site-header-content", dangerouslySetInnerHTML: {__html: sanitizedHeader}}),
-                h('div', {className:"justify-self-end"}, siteData.helpTileId && h('button', {onClick:() => handleNavigateToTile(siteData.helpTileId), className:"px-4 py-2 bg-blue-100 text-blue-700 rounded-lg shadow font-semibold hover:bg-blue-200"}, "Help"))
+                h('div', { className: "min-w-0 text-center col-start-2 site-header-content", dangerouslySetInnerHTML: { __html: sanitizedHeader } }),
+                h('div', { className: "justify-self-end" }, siteData.helpTileId && h('button', { onClick: () => handleNavigateToTile(siteData.helpTileId), className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg shadow font-semibold hover:bg-blue-200" }, "Help"))
             )
         );
-        const main = h('main', {className: "container mx-auto px-6"}, h('div', {className: "mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"}, tilesToDisplay.length === 0 ? h('p', {className: "text-gray-600 text-center text-lg p-8 col-span-full"}, "No tiles available for your access level.") : tilesToDisplay.map((tile: any) => h(DeployedTileDisplay, { key: tile.id, tile, onNavigateToChildren: handleNavigateToChildren, onNavigateToTile: handleNavigateToTile, onPlayVideo: handlePlayVideo, _internalOnTileClick, isHighlighted: tile.id === highlightedTileId, onHighlightComplete: handleHighlightComplete }))));
-        const footer = h('footer', {className: "bg-gray-800 text-white py-8 mt-16"}, h('div', {className: "container mx-auto px-6 text-center", dangerouslySetInnerHTML: {__html: sanitizedFooter}}));
-        
+        const main = h('main', { className: "container mx-auto px-6" }, h('div', { className: "mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" }, tilesToDisplay.length === 0 ? h('p', { className: "text-gray-600 text-center text-lg p-8 col-span-full" }, "No tiles available for your access level.") : tilesToDisplay.map((tile: any) => h(DeployedTileDisplay, { key: tile.id, tile, onNavigateToChildren: handleNavigateToChildren, onNavigateToTile: handleNavigateToTile, onPlayVideo: handlePlayVideo, _internalOnTileClick, isHighlighted: tile.id === highlightedTileId, onHighlightComplete: handleHighlightComplete }))));
+        // Footer removed for deployment as per user request
+        // const footer = h('footer', { className: "bg-gray-800 text-white py-8 mt-16" }, h('div', { className: "container mx-auto px-6 text-center", dangerouslySetInnerHTML: { __html: sanitizedFooter } }));
+
         return h(ErrorBoundary, null,
-            h('div', {className:"p-0 m-0 bg-gray-100 font-sans", style: { fontFamily: "'Inter', sans-serif" } },
-                header, main, footer,
+            h('div', { className: "p-0 m-0 bg-gray-100 font-sans", style: { fontFamily: "'Inter', sans-serif" } },
+                header, main, // footer removed
                 videoUrl && h(DeployedVideoPlayer, { url: videoUrl, onClose: handleCloseVideo })
             )
         );
