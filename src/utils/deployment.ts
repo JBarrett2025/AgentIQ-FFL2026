@@ -2,6 +2,7 @@ import type { SiteData } from '../types';
 import { defaultTileProperties } from '../constants';
 import { domPurifySource } from './dompurify';
 import { reactSource, reactDomSource, tailwindSource } from './bundledDependencies';
+import { deploymentControllerSource } from './deploymentController';
 
 /**
  * This function contains the complete, self-contained logic for the deployed application.
@@ -486,5 +487,7 @@ export const generateComponentJavaScript = (siteData: SiteData): string => {
         customElements.define('nested-site-viewer', NestedSiteViewerElement);
     }
 })();
+
+${deploymentControllerSource}
 `;
 };
