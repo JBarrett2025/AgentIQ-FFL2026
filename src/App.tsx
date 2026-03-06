@@ -172,15 +172,26 @@ const App: React.FC = () => {
     }, [currentPath]);
 
     const handleAddTileToCurrentLevel = useCallback((templateProperties: Partial<Tile> = {}) => {
+        const uniqueSuffix = Date.now().toString();
+        const newNameKey = templateProperties.nameKey || `new_tile_name_${uniqueSuffix}`;
+        const newDescKey = templateProperties.descriptionKey || `new_tile_desc_${uniqueSuffix}`;
+
         const newTile: Tile = {
             id: generateUniqueId(),
             ...defaultTileProperties,
             ...templateProperties,
+            nameKey: newNameKey,
+            descriptionKey: newDescKey,
             children: [],
             isVisible: {
                 ...defaultTileProperties.isVisible,
                 ...(templateProperties.isVisible || {})
             }
+        };
+
+        const newTranslations = {
+            [newNameKey]: { en: 'New Tile', es: 'Nuevo Mosaico' },
+            [newDescKey]: { en: 'A brief description for this tile.', es: 'Una breve descripción para este mosaico.' }
         };
 
         let updatedTiles;
@@ -190,21 +201,37 @@ const App: React.FC = () => {
         } else {
             updatedTiles = [...siteData.tiles, newTile];
         }
-        updateAndSaveSiteData({ tiles: updatedTiles });
-    }, [currentPath, siteData.tiles, updateAndSaveSiteData]);
+        updateAndSaveSiteData({
+            tiles: updatedTiles,
+            translations: { ...siteData.translations, ...newTranslations }
+        });
+    }, [currentPath, siteData.tiles, siteData.translations, updateAndSaveSiteData]);
 
     const handleAddChildTile = useCallback((parentId: string) => {
+        const uniqueSuffix = Date.now().toString();
+        const newNameKey = `new_child_tile_name_${uniqueSuffix}`;
+        const newDescKey = `new_child_tile_desc_${uniqueSuffix}`;
+
         const newTile: Tile = {
             id: generateUniqueId(),
             ...defaultTileProperties,
-            nameKey: `new_child_tile_${Date.now()}`,
-            descriptionKey: `new_child_tile_desc_${Date.now()}`,
+            nameKey: newNameKey,
+            descriptionKey: newDescKey,
             children: [],
             isVisible: { ...defaultTileProperties.isVisible }
         };
+
+        const newTranslations = {
+            [newNameKey]: { en: 'New Child Tile', es: 'Nuevo Mosaico Secundario' },
+            [newDescKey]: { en: 'A brief description for this child tile.', es: 'Una breve descripción para este mosaico secundario.' }
+        };
+
         const updatedTiles = findAndAddChildTile(siteData.tiles, parentId, newTile);
-        updateAndSaveSiteData({ tiles: updatedTiles });
-    }, [siteData.tiles, updateAndSaveSiteData]);
+        updateAndSaveSiteData({
+            tiles: updatedTiles,
+            translations: { ...siteData.translations, ...newTranslations }
+        });
+    }, [siteData.tiles, siteData.translations, updateAndSaveSiteData]);
 
     const handleDeleteTile = useCallback((tileId: string, parentId: string | null) => {
         showConfirmation(
@@ -418,16 +445,37 @@ const App: React.FC = () => {
                         "Import Site Data",
                         "Importing this file will overwrite your current site data. Continue?",
                         () => {
-                            const sanitizeTiles = (tiles: any[]): Tile[] => {
+                            const sanitizeTiles = (tiles: any[], dict: TranslationDictionary): Tile[] => {
                                 return tiles.map(tile => {
                                     const { borderColor, ...restOfTile } = tile;
                                     const { borderColor: vBorderColor, ...restOfVisibility } = (tile.isVisible || {});
+
+                                    // MIGRATION SCRIPT: Fix 'default_tile_name' collisions from Phase 1 bug
+                                    let safeNameKey = tile.nameKey || defaultTileProperties.nameKey;
+                                    let safeDescKey = tile.descriptionKey || defaultTileProperties.descriptionKey;
+
+                                    if (safeNameKey === 'default_tile_name' || safeDescKey === 'default_tile_description') {
+                                        const uniqueSuffix = Date.now().toString() + Math.random().toString(36).substring(7);
+                                        safeNameKey = `migrated_title_${uniqueSuffix}`;
+                                        safeDescKey = `migrated_desc_${uniqueSuffix}`;
+
+                                        // Rescue string values if they existed in the imported dictionary at the old collided key
+                                        const oldName = importedData.translations?.[tile.nameKey]?.en || tile.name || 'Tile';
+                                        const oldNameEs = importedData.translations?.[tile.nameKey]?.es || '';
+                                        const oldDesc = importedData.translations?.[tile.descriptionKey]?.en || tile.description || '';
+                                        const oldDescEs = importedData.translations?.[tile.descriptionKey]?.es || '';
+
+                                        dict[safeNameKey] = { en: oldName, es: oldNameEs };
+                                        dict[safeDescKey] = { en: oldDesc, es: oldDescEs };
+                                    }
 
                                     const sanitizedTile: Tile = {
                                         ...defaultTileProperties,
                                         ...restOfTile,
                                         id: tile.id || generateUniqueId(),
-                                        children: tile.children ? sanitizeTiles(tile.children) : [],
+                                        nameKey: safeNameKey,
+                                        descriptionKey: safeDescKey,
+                                        children: tile.children ? sanitizeTiles(tile.children, dict) : [],
                                         accessTags: Array.isArray(tile.accessTags) ? tile.accessTags.map(String) : [],
                                         isVisible: {
                                             ...defaultTileProperties.isVisible,
@@ -458,12 +506,15 @@ const App: React.FC = () => {
                                 });
                             };
 
+                            const newTranslations: TranslationDictionary = { ...(importedData.translations || defaultSiteProperties.translations) };
+                            const safeTiles = sanitizeTiles(importedData.tiles || [], newTranslations);
+
                             const newSiteData: SiteData = {
                                 siteNameKey: importedData.siteNameKey || defaultSiteProperties.siteNameKey,
                                 headerContentKey: importedData.headerContentKey || defaultSiteProperties.headerContentKey,
                                 footerContentKey: importedData.footerContentKey || defaultSiteProperties.footerContentKey,
-                                translations: importedData.translations || defaultSiteProperties.translations,
-                                tiles: sanitizeTiles(importedData.tiles || []),
+                                translations: newTranslations,
+                                tiles: safeTiles,
                                 templates: sanitizeTemplates(importedData.templates || []),
                                 helpTileId: importedData.helpTileId,
                             };
