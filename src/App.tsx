@@ -15,6 +15,7 @@ import PromptModal from './components/PromptModal';
 import DOMPurify from 'dompurify';
 import VideoPlayer from './components/VideoPlayer';
 import { PreviousArrowIcon, HomeIcon } from './components/icons';
+import { requestTranslation } from './services/firebase';
 
 const LOCAL_STORAGE_KEY = 'nestedSiteBuilderData_v2';
 
@@ -528,6 +529,39 @@ const App: React.FC = () => {
                             setCurrentPath([]);
                             setNavigationHistory([[]]);
                             setIsViewingPreview(false);
+
+                            // PHASE 6: Asynchronous Translation Sweep for Missing Spanish Legacy Data
+                            const sweepAndTranslateDictionary = async (dict: TranslationDictionary) => {
+                                const entries = Object.entries(dict);
+                                let hasUpdates = false;
+                                const updatedDict = { ...dict };
+
+                                for (const [key, value] of entries) {
+                                    if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
+                                        try {
+                                            const translatedText = await requestTranslation(value.en.trim(), 'es');
+                                            if (translatedText) {
+                                                updatedDict[key] = { ...value, es: translatedText };
+                                                hasUpdates = true;
+                                            }
+                                        } catch (err) {
+                                            console.warn(`Translation sweep failed for string: "${value.en}"`, err);
+                                        }
+                                    }
+                                }
+
+                                // If translations occurred, push the updated dictionary into React State and LocalStorage
+                                if (hasUpdates) {
+                                    setSiteData(prevSiteData => {
+                                        const finalSiteData = { ...prevSiteData, translations: updatedDict };
+                                        saveSiteData(finalSiteData);
+                                        return finalSiteData;
+                                    });
+                                }
+                            };
+
+                            // Fire and forget: Runs in the background without locking up the UI
+                            sweepAndTranslateDictionary(newTranslations);
                         },
                         true
                     );
