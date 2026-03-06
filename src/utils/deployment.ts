@@ -70,7 +70,7 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
 
     const DeployedVideoPlayer = ({ url, onClose }: any) => { useEffect(() => { const l = (e: any) => e.key === 'Escape' && onClose(); document.addEventListener('keydown', l); return () => document.removeEventListener('keydown', l); }, [onClose]); return h('div', { className: "fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[9999]", onClick: onClose, role: "dialog", "aria-modal": "true" }, h('div', { className: "bg-black w-full max-w-4xl relative shadow-2xl rounded-lg", style: { aspectRatio: '16 / 9' }, onClick: (e: any) => e.stopPropagation() }, h('iframe', { src: url, width: "100%", height: "100%", allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, title: "Embedded Video Player", className: "rounded-lg" }), h('button', { onClick: onClose, className: "absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-600 text-white text-xl flex items-center justify-center" }, '×'))); };
 
-    const DeployedTileDisplay = ({ tile, onNavigateToChildren, onNavigateToTile, onPlayVideo, _internalOnTileClick, isHighlighted, onHighlightComplete }: any) => {
+    const DeployedTileDisplay = ({ tile, currentLanguage, onNavigateToChildren, onNavigateToTile, onPlayVideo, _internalOnTileClick, isHighlighted, onHighlightComplete }: any) => {
         const tileRef = useRef(null);
         const [isAnimating, setIsAnimating] = useState(false);
 
@@ -110,9 +110,10 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
 
         const content: any[] = [];
         if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${siteData.translations[tile.nameKey]?.en || 'Tile'} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
-        if (isVisible.name) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, siteData.translations[tile.nameKey]?.en || 'Tile')); }
-        const descriptionText = siteData.translations[tile.descriptionKey]?.en || '';
-        if (isVisible.description && descriptionText) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, descriptionText)); }
+        const translatedName = siteData.translations[tile.nameKey]?.[currentLanguage as 'en' | 'es'] || siteData.translations[tile.nameKey]?.en || 'Tile';
+        if (isVisible.name && !useLogoBg) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, translatedName)); }
+        const descriptionText = siteData.translations[tile.descriptionKey]?.[currentLanguage as 'en' | 'es'] || siteData.translations[tile.descriptionKey]?.en || '';
+        if (isVisible.description && descriptionText && !useLogoBg) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, descriptionText)); }
         if (isVisible.overviewVideo && tile.overviewVideo) { content.push(h('div', { key: 'overview', className: "mt-4 text-center" }, h('button', { onClick: (e: any) => { e.stopPropagation(); onPlayVideo(tile.overviewVideo) }, className: "inline-block relative group" }, h('img', { src: tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale", alt: "Overview", className: "rounded-md shadow-md" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-12 h-12 text-white" }))))); }
         if (isVisible.trainingVideos && tile.trainingVideos && tile.trainingVideos.length > 0) {
             content.push(h('div', { key: 'training', className: "mt-4" },
@@ -151,6 +152,7 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
     };
 
     const DeployedApp = forwardRef(({ initialAccessTags = [], _internalOnTileClick = (_tile: any) => { }, _internalOnNavigate = (_data: any) => { }, _internalOnReady = () => { } }: any, ref: any) => {
+        const [currentLanguage, setCurrentLanguage] = useState('en');
         const [currentPath, setCurrentPath] = useState([] as string[]);
         const [history, setHistory] = useState([[]] as string[][]);
         const [videoUrl, setVideoUrl] = useState(null);
@@ -234,7 +236,7 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
 
         useEffect(() => { _internalOnReady(); }, [_internalOnReady]);
 
-        const sanitizedHeader = useMemo(() => sanitizeHTML(siteData.translations[siteData.headerContentKey]?.en || ''), [siteData.headerContentKey, siteData.translations]);
+        const sanitizedHeader = useMemo(() => sanitizeHTML(siteData.translations[siteData.headerContentKey]?.[currentLanguage as 'en' | 'es'] || siteData.translations[siteData.headerContentKey]?.en || ''), [siteData.headerContentKey, siteData.translations, currentLanguage]);
         // const sanitizedFooter = useMemo(() => sanitizeHTML(siteData.translations[siteData.footerContentKey]?.en || ''), [siteData.footerContentKey, siteData.translations]);
         const tilesToDisplay = getTilesToDisplay();
 
@@ -245,10 +247,20 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
                     currentPath.length > 0 && h('button', { onClick: handleGoHome, className: "text-blue-600 hover:text-blue-800 transition-colors flex items-center text-xl p-2 rounded-md" }, h(HomeIcon), h('span', { className: "ml-2 hidden sm:inline" }, "Home"))
                 ),
                 h('div', { className: "min-w-0 text-center col-start-2 site-header-content", dangerouslySetInnerHTML: { __html: sanitizedHeader } }),
-                h('div', { className: "justify-self-end" }, siteData.helpTileId && h('button', { onClick: () => handleNavigateToTile(siteData.helpTileId), className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg shadow font-semibold hover:bg-blue-200" }, "Help"))
+                h('div', { className: "justify-self-end flex items-center space-x-3" },
+                    h('select', {
+                        value: currentLanguage,
+                        onChange: (e: any) => setCurrentLanguage(e.target.value),
+                        className: "bg-white border border-gray-300 text-sm font-semibold text-gray-700 py-1.5 px-3 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    },
+                        h('option', { value: 'en' }, 'English'),
+                        h('option', { value: 'es' }, 'Español')
+                    ),
+                    siteData.helpTileId && h('button', { onClick: () => handleNavigateToTile(siteData.helpTileId), className: "px-4 py-2 bg-blue-100 text-blue-700 rounded-lg shadow font-semibold hover:bg-blue-200" }, "Help")
+                )
             )
         );
-        const main = h('main', { className: "container mx-auto px-6" }, h('div', { className: "mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" }, tilesToDisplay.length === 0 ? h('p', { className: "text-gray-600 text-center text-lg p-8 col-span-full" }, "No tiles available for your access level.") : tilesToDisplay.map((tile: any) => h(DeployedTileDisplay, { key: tile.id, tile, onNavigateToChildren: handleNavigateToChildren, onNavigateToTile: handleNavigateToTile, onPlayVideo: handlePlayVideo, _internalOnTileClick, isHighlighted: tile.id === highlightedTileId, onHighlightComplete: handleHighlightComplete }))));
+        const main = h('main', { className: "container mx-auto px-6" }, h('div', { className: "mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" }, tilesToDisplay.length === 0 ? h('p', { className: "text-gray-600 text-center text-lg p-8 col-span-full" }, "No tiles available for your access level.") : tilesToDisplay.map((tile: any) => h(DeployedTileDisplay, { key: tile.id, currentLanguage: currentLanguage, tile, onNavigateToChildren: handleNavigateToChildren, onNavigateToTile: handleNavigateToTile, onPlayVideo: handlePlayVideo, _internalOnTileClick, isHighlighted: tile.id === highlightedTileId, onHighlightComplete: handleHighlightComplete }))));
         // Footer removed for deployment as per user request
         // const footer = h('footer', { className: "bg-gray-800 text-white py-8 mt-16" }, h('div', { className: "container mx-auto px-6 text-center", dangerouslySetInnerHTML: { __html: sanitizedFooter } }));
 
