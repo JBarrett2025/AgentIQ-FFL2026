@@ -14,11 +14,16 @@ const TilePickerNode: React.FC<TilePickerNodeProps> = ({ tile, translations, onS
     <div>
       <div
         onClick={() => onSelect(tile)}
-        className="p-2 hover:bg-blue-100 cursor-pointer rounded transition-colors duration-150"
+        className="p-2 hover:bg-blue-100 cursor-pointer rounded transition-colors duration-150 flex items-center justify-between"
         style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
       >
-        <span className="text-gray-800">{translations[tile.nameKey]?.en || 'Tile'}</span>
-        {tile.children && tile.children.length > 0 && <span className="text-gray-500 text-sm ml-2">({tile.children.length})</span>}
+        <div>
+          <span className="text-gray-800 font-medium">{tile.internalName || translations[tile.nameKey]?.en || 'Tile'}</span>
+          {tile.internalName && translations[tile.nameKey]?.en && (
+            <span className="text-gray-400 text-sm ml-2 italic">({translations[tile.nameKey]?.en})</span>
+          )}
+        </div>
+        {tile.children && tile.children.length > 0 && <span className="text-gray-500 text-sm ml-2">({tile.children.length} children)</span>}
       </div>
       {tile.children && tile.children.length > 0 && (
         <div>

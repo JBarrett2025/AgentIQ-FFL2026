@@ -48,6 +48,7 @@ export interface TranslationDictionary {
 
 export interface TileProperties {
   nameKey: string;
+  internalName?: string; // Admin-facing name, especially useful when useLogoAsBackground is true
   descriptionKey: string;
   color: string;
   font: string;

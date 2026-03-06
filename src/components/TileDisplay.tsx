@@ -287,7 +287,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                         </div>
                     )}
                     <div className="flex justify-center items-center mb-2 gap-2">
-                        {tile.isVisible.name && (
+                        {tile.isVisible.name && !useLogoBg && (
                             <h3 className="text-3xl font-semibold text-center" style={{ color: tile.isVisible.color ? dynamicTextColor : '#333333' }}>
                                 {translations[tile.nameKey]?.en || 'Tile'}
                             </h3>
@@ -303,7 +303,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                         )}
                     </div>
 
-                    {renderContent('description' as keyof Tile, translations[tile.descriptionKey]?.en || '')}
+                    {!useLogoBg && renderContent('description' as keyof Tile, translations[tile.descriptionKey]?.en || '')}
                     {renderContent('overviewVideo', tile.overviewVideo)}
                     {renderContent('trainingVideos', tile.trainingVideos)}
                     {renderContent('documentation', tile.documentation)}

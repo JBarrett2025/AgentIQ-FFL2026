@@ -6,6 +6,7 @@ import { generateContent, findVideoWithAi, generateImageWithAi, generateDesignSu
 import { getThumbnailUrl } from '../utils/videoUtils';
 import { SparklesIcon, FilmIcon, PhotoIcon, PaletteIcon } from './icons';
 import PromptModal from './PromptModal';
+import { requestTranslation } from '../services/firebase';
 
 
 interface TileEditorProps {
@@ -27,6 +28,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
     const [descriptionEs, setDescriptionEs] = useState(translations[tile.descriptionKey]?.es || '');
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [currentLanguage, setCurrentLanguage] = useState<'en' | 'es'>('en');
+    const [isSaving, setIsSaving] = useState(false);
     const [aiPromptState, setAiPromptState] = useState<{
         isOpen: boolean;
         title: string;
@@ -101,7 +103,8 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
     };
 
     const handleAddInternalLink = (targetTile: Tile) => {
-        const newLink: InternalLink = { name: translations[targetTile.nameKey]?.en || 'Tile', targetTileId: targetTile.id, id: generateUniqueId() };
+        const linkName = targetTile.internalName || translations[targetTile.nameKey]?.en || 'Tile';
+        const newLink: InternalLink = { name: linkName, targetTileId: targetTile.id, id: generateUniqueId() };
         setEditedTile(prev => ({ ...prev, internalLinks: [...(prev.internalLinks || []), newLink] }));
     };
 
@@ -132,12 +135,30 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
         });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        setIsSaving(true);
         const updatedTranslations = { ...translations };
-        updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: nameEs.trim() };
-        updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: descriptionEs.trim() };
+
+        let finalNameEs = nameEs.trim();
+        let finalDescriptionEs = descriptionEs.trim();
+
+        // Auto-translate name if English is provided but Spanish is empty
+        if (nameEn.trim() && !finalNameEs) {
+            finalNameEs = await requestTranslation(nameEn.trim(), 'es');
+            setNameEs(finalNameEs);
+        }
+
+        // Auto-translate description if English is provided but Spanish is empty
+        if (descriptionEn.trim() && !finalDescriptionEs) {
+            finalDescriptionEs = await requestTranslation(descriptionEn.trim(), 'es');
+            setDescriptionEs(finalDescriptionEs);
+        }
+
+        updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: finalNameEs };
+        updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: finalDescriptionEs };
 
         onSave(editedTile, updatedTranslations);
+        setIsSaving(false);
     };
 
     const handleSaveTemplate = () => {
@@ -395,6 +416,19 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                                 </div>
                                 <input type="text" id="tile-name" name="name" value={currentLanguage === 'en' ? nameEn : nameEs} onChange={(e) => currentLanguage === 'en' ? setNameEn(e.target.value) : setNameEs(e.target.value)} className="w-full p-2 border rounded-md mb-3" />
 
+                                <label htmlFor="tile-internal-name" className="block text-sm font-semibold mb-1 text-blue-800">
+                                    Internal Name <span className="text-xs font-normal text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full ml-2">Admin Only</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    id="tile-internal-name"
+                                    name="internalName"
+                                    value={editedTile.internalName || ''}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-blue-300 bg-blue-50 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    placeholder="e.g. Secret Hidden Tile"
+                                />
+
                                 <div className="flex items-center justify-between mb-1">
                                     <label htmlFor="tile-description" className="block text-sm font-medium">Description ({currentLanguage.toUpperCase()})</label>
                                     <button onClick={() => handleGenerateClick('description')} className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold" aria-label="Generate Description with AI">
@@ -558,7 +592,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                                 {editedTile.workflow?.nextTileId ? (
                                     <div className="flex items-center justify-between p-2 bg-blue-50 rounded-md">
                                         <span className="text-sm text-blue-800">
-                                            Next Tile: <span className="font-semibold">{translations[findTileById(editedTile.workflow.nextTileId)?.nameKey || '']?.en || 'Unknown Tile'}</span>
+                                            Next Tile: <span className="font-semibold">{findTileById(editedTile.workflow.nextTileId)?.internalName || translations[findTileById(editedTile.workflow.nextTileId)?.nameKey || '']?.en || 'Unknown Tile'}</span>
                                         </span>
                                         <button onClick={handleClearNextTile} className="text-red-500 text-sm hover:underline font-semibold">Clear</button>
                                     </div>
@@ -570,8 +604,20 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                     </div>
 
                     <div className="mt-6 flex justify-end space-x-3 border-t pt-4">
-                        <button onClick={onClose} className="px-5 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-semibold">Cancel</button>
-                        <button onClick={handleSave} className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">Save Changes</button>
+                        <button onClick={onClose} className="px-5 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-semibold" disabled={isSaving}>Cancel</button>
+                        <button onClick={handleSave} className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold shadow disabled:opacity-50 flex items-center" disabled={isSaving}>
+                            {isSaving ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Translating & Saving...
+                                </>
+                            ) : (
+                                "Save Changes"
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>

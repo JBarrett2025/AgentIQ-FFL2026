@@ -4,6 +4,7 @@ import type { SiteData, TileProperties } from './types';
 // Default properties for a new tile
 export const defaultTileProperties: TileProperties = {
     nameKey: 'default_tile_name',
+    internalName: '',
     descriptionKey: 'default_tile_description',
     color: '#FFFFFF', // Default to white background for new tiles
     font: 'Verdana',
