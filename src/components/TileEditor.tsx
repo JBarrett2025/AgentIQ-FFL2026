@@ -57,7 +57,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
 
     useEffect(() => {
         setEditedTile(tile);
-        setNameEn(translations[tile.nameKey]?.en || 'Tile');
+        setNameEn(translations[tile.nameKey]?.en ?? '');
         setNameEs(translations[tile.nameKey]?.es || '');
         setDescriptionEn(translations[tile.descriptionKey]?.en || '');
         setDescriptionEs(translations[tile.descriptionKey]?.es || '');
@@ -103,7 +103,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
     };
 
     const handleAddInternalLink = (targetTile: Tile) => {
-        const linkName = targetTile.internalName || translations[targetTile.nameKey]?.en || 'Tile';
+        const linkName = targetTile.internalName || translations[targetTile.nameKey]?.en || 'Unnamed Tile';
         const newLink: InternalLink = { name: linkName, targetTileId: targetTile.id, id: generateUniqueId() };
         setEditedTile(prev => ({ ...prev, internalLinks: [...(prev.internalLinks || []), newLink] }));
     };

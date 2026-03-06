@@ -283,13 +283,13 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                 >
                     {tile.isVisible.logo && tile.logoUrl && !tile.useLogoAsBackground && (
                         <div className="mb-4 text-center h-40 flex items-center justify-center">
-                            <img src={tile.logoUrl} alt={`${translations[tile.nameKey]?.en || 'Tile'} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            <img src={tile.logoUrl} alt={`${translations[tile.nameKey]?.en ?? ''} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
                     <div className="flex justify-center items-center mb-2 gap-2">
                         {tile.isVisible.name && !useLogoBg && (
                             <h3 className="text-3xl font-semibold text-center" style={{ color: tile.isVisible.color ? dynamicTextColor : '#333333' }}>
-                                {translations[tile.nameKey]?.en || 'Tile'}
+                                {translations[tile.nameKey]?.en ?? ''}
                             </h3>
                         )}
                         {isBuilderMode && tile.children && tile.children.length > 0 && (

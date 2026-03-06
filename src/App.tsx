@@ -662,7 +662,7 @@ const App: React.FC = () => {
 
     const tilesToDisplay = getTilesToDisplay();
     const currentParentTile = currentPath.length > 0 ? findTileById(siteData.tiles, currentPath[currentPath.length - 1]) : null;
-    const currentLevelTitle = currentParentTile ? `Editing Children of: ${siteData.translations[currentParentTile.nameKey]?.en || 'Tile'}` : "Site Structure (Root Level)";
+    const currentLevelTitle = currentParentTile ? `Editing Children of: ${siteData.translations[currentParentTile.nameKey]?.en ?? ''}` : "Site Structure (Root Level)";
 
     return (
         <div className="p-6 md:p-10 bg-gray-100 min-h-screen">

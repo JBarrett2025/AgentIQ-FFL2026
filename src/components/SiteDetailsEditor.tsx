@@ -99,7 +99,7 @@ const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, 
                         </div>
                         {helpTile ? (
                             <p className="text-sm text-green-700 mt-3">
-                                Currently linked to: <span className="font-semibold">{translations[helpTile.nameKey]?.en || 'Tile'}</span>
+                                Currently linked to: <span className="font-semibold">{translations[helpTile.nameKey]?.en ?? 'Unnamed Tile'}</span>
                             </p>
                         ) : (
                             <p className="text-sm text-gray-500 mt-3">No help tile selected. The help button will not be shown.</p>

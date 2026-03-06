@@ -109,8 +109,8 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         const mainClickAction = () => { _internalOnTileClick(tile); if (tile.children && tile.children.length > 0) onNavigateToChildren(tile.id); };
 
         const content: any[] = [];
-        if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${siteData.translations[tile.nameKey]?.en || 'Tile'} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
-        const translatedName = siteData.translations[tile.nameKey]?.[currentLanguage as 'en' | 'es'] || siteData.translations[tile.nameKey]?.en || 'Tile';
+        if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${siteData.translations[tile.nameKey]?.en ?? ''} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
+        const translatedName = siteData.translations[tile.nameKey]?.[currentLanguage as 'en' | 'es'] || siteData.translations[tile.nameKey]?.en || '';
         if (isVisible.name && !useLogoBg) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, translatedName)); }
         const descriptionText = siteData.translations[tile.descriptionKey]?.[currentLanguage as 'en' | 'es'] || siteData.translations[tile.descriptionKey]?.en || '';
         if (isVisible.description && descriptionText && !useLogoBg) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, descriptionText)); }
@@ -447,7 +447,7 @@ export const generateComponentJavaScript = (siteData: SiteData): string => {
             const props = {
                 ref: this.#reactRef,
                 initialAccessTags: initialAccessTags,
-                _internalOnTileClick: (tile) => this.dispatchEvent(new CustomEvent('tileClicked', { detail: { tileId: tile.id, tileName: siteData.translations[tile.nameKey]?.en || 'Tile', tile } })),
+                _internalOnTileClick: (tile) => this.dispatchEvent(new CustomEvent('tileClicked', { detail: { tileId: tile.id, tileName: siteData.translations[tile.nameKey]?.en ?? '', tile } })),
                 _internalOnNavigate: (data) => this.dispatchEvent(new CustomEvent('navigationChanged', { detail: { currentPath: data.path, currentParentTile: data.tile } })),
                 _internalOnReady: () => this.dispatchEvent(new CustomEvent('componentReady', { bubbles: true, composed: true, detail: { component: this } }))
             };

@@ -18,7 +18,7 @@ const TilePickerNode: React.FC<TilePickerNodeProps> = ({ tile, translations, onS
         style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
       >
         <div>
-          <span className="text-gray-800 font-medium">{tile.internalName || translations[tile.nameKey]?.en || 'Tile'}</span>
+          <span className="text-gray-800 font-medium">{tile.internalName || translations[tile.nameKey]?.en || 'Unnamed Tile'}</span>
           {tile.internalName && translations[tile.nameKey]?.en && (
             <span className="text-gray-400 text-sm ml-2 italic">({translations[tile.nameKey]?.en})</span>
           )}
