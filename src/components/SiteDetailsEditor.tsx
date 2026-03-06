@@ -7,22 +7,34 @@ interface SiteDetailsEditorProps {
     currentSiteData: SiteData;
     translations: TranslationDictionary;
     onClose: () => void;
-    onSave: (details: Pick<SiteData, 'helpTileId'> & { siteNameEn: string, headerContentEn: string, footerContentEn: string }) => void;
+    onSave: (details: Pick<SiteData, 'helpTileId'> & { siteNameEn: string, siteNameEs: string, headerContentEn: string, headerContentEs: string, footerContentEn: string, footerContentEs: string }) => void;
     isNewSiteFlow: boolean;
     onShowTilePicker: (onSelect: (tile: Tile) => void) => void;
 }
 
 const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, translations, onClose, onSave, isNewSiteFlow, onShowTilePicker }) => {
     const [siteNameEn, setSiteNameEn] = useState(translations[currentSiteData.siteNameKey]?.en || '');
+    const [siteNameEs, setSiteNameEs] = useState(translations[currentSiteData.siteNameKey]?.es || '');
     const [headerContentEn, setHeaderContentEn] = useState(translations[currentSiteData.headerContentKey]?.en || '');
+    const [headerContentEs, setHeaderContentEs] = useState(translations[currentSiteData.headerContentKey]?.es || '');
     const [footerContentEn, setFooterContentEn] = useState(translations[currentSiteData.footerContentKey]?.en || '');
+    const [footerContentEs, setFooterContentEs] = useState(translations[currentSiteData.footerContentKey]?.es || '');
     const [helpTileId, setHelpTileId] = useState(currentSiteData.helpTileId);
+    const [currentLanguage, setCurrentLanguage] = useState<'en' | 'es'>('en');
 
     const handleSaveClick = () => {
-        if (siteNameEn.trim()) {
-            onSave({ siteNameEn: siteNameEn.trim(), headerContentEn, footerContentEn, helpTileId });
+        if (siteNameEn.trim() || siteNameEs.trim()) {
+            onSave({
+                siteNameEn: siteNameEn.trim(),
+                siteNameEs: siteNameEs.trim(),
+                headerContentEn,
+                headerContentEs,
+                footerContentEn,
+                footerContentEs,
+                helpTileId
+            });
         } else {
-            alert("Site name cannot be empty.");
+            alert("Site name cannot be empty in at least one language.");
         }
     };
 
@@ -45,18 +57,34 @@ const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, 
                     <h2 className="text-2xl font-bold text-gray-800">{isNewSiteFlow ? "Create New Site" : "Edit Site Details"}</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl font-semibold">&times;</button>
                 </div>
+                <div className="flex justify-center mb-6">
+                    <div className="bg-gray-200 p-1 rounded-full inline-flex">
+                        <button
+                            onClick={() => setCurrentLanguage('en')}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentLanguage === 'en' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+                        >
+                            English
+                        </button>
+                        <button
+                            onClick={() => setCurrentLanguage('es')}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${currentLanguage === 'es' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+                        >
+                            Español
+                        </button>
+                    </div>
+                </div>
                 <div className="space-y-6">
                     <div>
-                        <label htmlFor="site-name-input" className="block text-sm font-medium text-gray-700 mb-1">Site Name:</label>
-                        <input id="site-name-input" type="text" value={siteNameEn} onChange={(e) => setSiteNameEn(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        <label htmlFor="site-name-input" className="block text-sm font-medium text-gray-700 mb-1">Site Name ({currentLanguage.toUpperCase()}):</label>
+                        <input id="site-name-input" type="text" value={currentLanguage === 'en' ? siteNameEn : siteNameEs} onChange={(e) => currentLanguage === 'en' ? setSiteNameEn(e.target.value) : setSiteNameEs(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md shadow-sm" />
                     </div>
                     <div>
-                        <label htmlFor="header-content-textarea" className="block text-sm font-medium text-gray-700 mb-1">Header HTML Content:</label>
-                        <textarea id="header-content-textarea" value={headerContentEn} onChange={(e) => setHeaderContentEn(e.target.value)} rows={6} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
+                        <label htmlFor="header-content-textarea" className="block text-sm font-medium text-gray-700 mb-1">Header HTML Content ({currentLanguage.toUpperCase()}):</label>
+                        <textarea id="header-content-textarea" value={currentLanguage === 'en' ? headerContentEn : headerContentEs} onChange={(e) => currentLanguage === 'en' ? setHeaderContentEn(e.target.value) : setHeaderContentEs(e.target.value)} rows={6} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
                     </div>
                     <div>
-                        <label htmlFor="footer-content-textarea" className="block text-sm font-medium text-gray-700 mb-1">Footer HTML Content:</label>
-                        <textarea id="footer-content-textarea" value={footerContentEn} onChange={(e) => setFooterContentEn(e.target.value)} rows={4} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
+                        <label htmlFor="footer-content-textarea" className="block text-sm font-medium text-gray-700 mb-1">Footer HTML Content ({currentLanguage.toUpperCase()}):</label>
+                        <textarea id="footer-content-textarea" value={currentLanguage === 'en' ? footerContentEn : footerContentEs} onChange={(e) => currentLanguage === 'en' ? setFooterContentEn(e.target.value) : setFooterContentEs(e.target.value)} rows={4} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
                     </div>
                     <div className="p-4 bg-gray-50 rounded-md border">
                         <h3 className="text-lg font-semibold mb-3 text-gray-800">Global Help Link</h3>

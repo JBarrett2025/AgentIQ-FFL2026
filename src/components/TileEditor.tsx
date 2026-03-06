@@ -22,8 +22,11 @@ interface TileEditorProps {
 const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, onSave, onSaveAsTemplate, templates, onShowTilePicker, findTileById }) => {
     const [editedTile, setEditedTile] = useState<Tile>(tile);
     const [nameEn, setNameEn] = useState(translations[tile.nameKey]?.en || '');
+    const [nameEs, setNameEs] = useState(translations[tile.nameKey]?.es || '');
     const [descriptionEn, setDescriptionEn] = useState(translations[tile.descriptionKey]?.en || '');
+    const [descriptionEs, setDescriptionEs] = useState(translations[tile.descriptionKey]?.es || '');
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [currentLanguage, setCurrentLanguage] = useState<'en' | 'es'>('en');
     const [aiPromptState, setAiPromptState] = useState<{
         isOpen: boolean;
         title: string;
@@ -50,18 +53,36 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
     } | null>(null);
 
 
-    useEffect(() => { setEditedTile(tile); }, [tile]);
+    useEffect(() => {
+        setEditedTile(tile);
+        setNameEn(translations[tile.nameKey]?.en || 'Tile');
+        setNameEs(translations[tile.nameKey]?.es || '');
+        setDescriptionEn(translations[tile.descriptionKey]?.en || '');
+        setDescriptionEs(translations[tile.descriptionKey]?.es || '');
+    }, [tile, translations]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
 
         if (type === 'checkbox') {
-            const isVisibilityToggle = Object.keys(defaultTileProperties.isVisible).includes(name);
-            if (isVisibilityToggle) {
-                setEditedTile(prev => ({ ...prev, isVisible: { ...prev.isVisible, [name]: checked } }));
+            if (name === 'useLogoAsBackground') {
+                setEditedTile(prev => ({
+                    ...prev,
+                    [name]: checked,
+                    isVisible: checked ? {
+                        ...prev.isVisible,
+                        name: false,
+                        description: false
+                    } : prev.isVisible
+                }));
             } else {
-                setEditedTile(prev => ({ ...prev, [name]: checked }));
+                const isVisibilityToggle = Object.keys(defaultTileProperties.isVisible).includes(name);
+                if (isVisibilityToggle) {
+                    setEditedTile(prev => ({ ...prev, isVisible: { ...prev.isVisible, [name]: checked } }));
+                } else {
+                    setEditedTile(prev => ({ ...prev, [name]: checked }));
+                }
             }
         } else {
             setEditedTile(prev => ({ ...prev, [name]: value }));
@@ -113,8 +134,8 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
 
     const handleSave = () => {
         const updatedTranslations = { ...translations };
-        updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: updatedTranslations[editedTile.nameKey]?.es || '' };
-        updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: updatedTranslations[editedTile.descriptionKey]?.es || '' };
+        updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: nameEs.trim() };
+        updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: descriptionEs.trim() };
 
         onSave(editedTile, updatedTranslations);
     };
@@ -291,7 +312,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
         setAiImagePromptState(null);
     };
 
-    const fontOptions = ['Inter', 'Arial', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New', 'Roboto', 'Montserrat'];
+    const fontOptions = ['Verdana', 'Inter', 'Arial', 'Georgia', 'Times New Roman', 'Courier New', 'Roboto', 'Montserrat'];
 
     const handleAiDesignerClick = () => {
         setAiDesignPromptState({ isOpen: true, isLoading: false });
@@ -349,22 +370,38 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                             </div>
                             {/* General */}
                             <div className="mb-6 p-4 bg-gray-50 rounded-md border">
-                                <h3 className="text-lg font-semibold mb-3">General Properties</h3>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-lg font-semibold">General Properties</h3>
+                                    <div className="bg-gray-200 p-1 rounded-full inline-flex">
+                                        <button
+                                            onClick={() => setCurrentLanguage('en')}
+                                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${currentLanguage === 'en' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+                                        >
+                                            English
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentLanguage('es')}
+                                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${currentLanguage === 'es' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+                                        >
+                                            Español
+                                        </button>
+                                    </div>
+                                </div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <label htmlFor="tile-name" className="block text-sm font-medium">Name</label>
+                                    <label htmlFor="tile-name" className="block text-sm font-medium">Name ({currentLanguage.toUpperCase()})</label>
                                     <button onClick={() => handleGenerateClick('name')} className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold" aria-label="Generate Name with AI">
                                         <SparklesIcon className="h-4 w-4 mr-1" /> Generate
                                     </button>
                                 </div>
-                                <input type="text" id="tile-name" name="name" value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="w-full p-2 border rounded-md mb-3" />
+                                <input type="text" id="tile-name" name="name" value={currentLanguage === 'en' ? nameEn : nameEs} onChange={(e) => currentLanguage === 'en' ? setNameEn(e.target.value) : setNameEs(e.target.value)} className="w-full p-2 border rounded-md mb-3" />
 
                                 <div className="flex items-center justify-between mb-1">
-                                    <label htmlFor="tile-description" className="block text-sm font-medium">Description</label>
+                                    <label htmlFor="tile-description" className="block text-sm font-medium">Description ({currentLanguage.toUpperCase()})</label>
                                     <button onClick={() => handleGenerateClick('description')} className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold" aria-label="Generate Description with AI">
                                         <SparklesIcon className="h-4 w-4 mr-1" /> Generate
                                     </button>
                                 </div>
-                                <textarea id="tile-description" name="description" value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} rows={3} className="w-full p-2 border rounded-md" />
+                                <textarea id="tile-description" name="description" value={currentLanguage === 'en' ? descriptionEn : descriptionEs} onChange={(e) => currentLanguage === 'en' ? setDescriptionEn(e.target.value) : setDescriptionEs(e.target.value)} rows={3} className="w-full p-2 border rounded-md" />
                             </div>
                             <div className="mb-6 p-4 bg-gray-50 rounded-md border">
                                 <h3 className="text-lg font-semibold mb-3">Access Control</h3>
@@ -413,12 +450,15 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                             <div className="mb-6 p-4 bg-gray-50 rounded-md border">
                                 <h3 className="text-lg font-semibold mb-3">Content Visibility</h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    {Object.keys(defaultTileProperties.isVisible).map(key => (
-                                        <label key={key} htmlFor={`visibility-${key}`} className="flex items-center space-x-2 text-sm">
-                                            <input type="checkbox" id={`visibility-${key}`} name={key} checked={editedTile.isVisible[key as keyof typeof editedTile.isVisible]} onChange={handleChange} />
-                                            <span>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
-                                        </label>
-                                    ))}
+                                    {Object.keys(defaultTileProperties.isVisible).map(key => {
+                                        const isDisabled = editedTile.useLogoAsBackground && (key === 'name' || key === 'description');
+                                        return (
+                                            <label key={key} htmlFor={`visibility-${key}`} className={`flex items-center space-x-2 text-sm ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                <input type="checkbox" id={`visibility-${key}`} name={key} checked={isDisabled ? false : editedTile.isVisible[key as keyof typeof editedTile.isVisible]} onChange={handleChange} disabled={isDisabled} />
+                                                <span>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
                             {/* URLs */}

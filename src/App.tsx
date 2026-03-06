@@ -386,12 +386,12 @@ const App: React.FC = () => {
         setIsEditingSiteDetails(true);
     }, []);
 
-    const handleSaveSiteDetails = useCallback((details: Pick<SiteData, 'helpTileId'> & { siteNameEn: string, headerContentEn: string, footerContentEn: string }) => {
+    const handleSaveSiteDetails = useCallback((details: Pick<SiteData, 'helpTileId'> & { siteNameEn: string, siteNameEs: string, headerContentEn: string, headerContentEs: string, footerContentEn: string, footerContentEs: string }) => {
         setSiteData(prev => {
             const newTranslations = { ...prev.translations };
-            newTranslations[prev.siteNameKey] = { ...newTranslations[prev.siteNameKey], en: details.siteNameEn, es: newTranslations[prev.siteNameKey]?.es || '' };
-            newTranslations[prev.headerContentKey] = { ...newTranslations[prev.headerContentKey], en: details.headerContentEn, es: newTranslations[prev.headerContentKey]?.es || '' };
-            newTranslations[prev.footerContentKey] = { ...newTranslations[prev.footerContentKey], en: details.footerContentEn, es: newTranslations[prev.footerContentKey]?.es || '' };
+            newTranslations[prev.siteNameKey] = { ...newTranslations[prev.siteNameKey], en: details.siteNameEn, es: details.siteNameEs || newTranslations[prev.siteNameKey]?.es || '' };
+            newTranslations[prev.headerContentKey] = { ...newTranslations[prev.headerContentKey], en: details.headerContentEn, es: details.headerContentEs || newTranslations[prev.headerContentKey]?.es || '' };
+            newTranslations[prev.footerContentKey] = { ...newTranslations[prev.footerContentKey], en: details.footerContentEn, es: details.footerContentEs || newTranslations[prev.footerContentKey]?.es || '' };
 
             const updatedSiteData = {
                 ...prev,

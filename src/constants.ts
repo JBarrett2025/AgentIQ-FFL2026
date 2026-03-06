@@ -6,7 +6,7 @@ export const defaultTileProperties: TileProperties = {
     nameKey: 'default_tile_name',
     descriptionKey: 'default_tile_description',
     color: '#FFFFFF', // Default to white background for new tiles
-    font: 'Inter',
+    font: 'Verdana',
     logoUrl: '',
     useLogoAsBackground: false,
     overviewVideo: '',
