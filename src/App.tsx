@@ -460,10 +460,11 @@ const App: React.FC = () => {
                                         safeDescKey = `migrated_desc_${uniqueSuffix}`;
 
                                         // Rescue string values if they existed in the imported dictionary at the old collided key
-                                        const oldName = importedData.translations?.[tile.nameKey]?.en || tile.name || 'Tile';
-                                        const oldNameEs = importedData.translations?.[tile.nameKey]?.es || '';
-                                        const oldDesc = importedData.translations?.[tile.descriptionKey]?.en || tile.description || '';
-                                        const oldDescEs = importedData.translations?.[tile.descriptionKey]?.es || '';
+                                        // Using ?? to ensure intentional empty strings "" are not overridden by falsy fallbacks
+                                        const oldName = importedData.translations?.[tile.nameKey]?.en ?? tile.name ?? '';
+                                        const oldNameEs = importedData.translations?.[tile.nameKey]?.es ?? '';
+                                        const oldDesc = importedData.translations?.[tile.descriptionKey]?.en ?? tile.description ?? '';
+                                        const oldDescEs = importedData.translations?.[tile.descriptionKey]?.es ?? '';
 
                                         dict[safeNameKey] = { en: oldName, es: oldNameEs };
                                         dict[safeDescKey] = { en: oldDesc, es: oldDescEs };
