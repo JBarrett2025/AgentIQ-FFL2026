@@ -1,25 +1,26 @@
 
 import React, { useState } from 'react';
-import type { SiteData, Tile } from '../types';
+import type { SiteData, Tile, TranslationDictionary } from '../types';
 import { findTileById } from '../utils/tileUtils';
 
 interface SiteDetailsEditorProps {
     currentSiteData: SiteData;
+    translations: TranslationDictionary;
     onClose: () => void;
-    onSave: (details: Pick<SiteData, 'siteName' | 'headerContent' | 'footerContent' | 'helpTileId'>) => void;
+    onSave: (details: Pick<SiteData, 'helpTileId'> & { siteNameEn: string, headerContentEn: string, footerContentEn: string }) => void;
     isNewSiteFlow: boolean;
     onShowTilePicker: (onSelect: (tile: Tile) => void) => void;
 }
 
-const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, onClose, onSave, isNewSiteFlow, onShowTilePicker }) => {
-    const [siteName, setSiteName] = useState(currentSiteData.siteName);
-    const [headerContent, setHeaderContent] = useState(currentSiteData.headerContent);
-    const [footerContent, setFooterContent] = useState(currentSiteData.footerContent);
+const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, translations, onClose, onSave, isNewSiteFlow, onShowTilePicker }) => {
+    const [siteNameEn, setSiteNameEn] = useState(translations[currentSiteData.siteNameKey]?.en || '');
+    const [headerContentEn, setHeaderContentEn] = useState(translations[currentSiteData.headerContentKey]?.en || '');
+    const [footerContentEn, setFooterContentEn] = useState(translations[currentSiteData.footerContentKey]?.en || '');
     const [helpTileId, setHelpTileId] = useState(currentSiteData.helpTileId);
 
     const handleSaveClick = () => {
-        if (siteName.trim()) {
-            onSave({ siteName: siteName.trim(), headerContent, footerContent, helpTileId });
+        if (siteNameEn.trim()) {
+            onSave({ siteNameEn: siteNameEn.trim(), headerContentEn, footerContentEn, helpTileId });
         } else {
             alert("Site name cannot be empty.");
         }
@@ -34,7 +35,7 @@ const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, 
     const handleClearHelpTile = () => {
         setHelpTileId(undefined);
     };
-    
+
     const helpTile = helpTileId ? findTileById(currentSiteData.tiles, helpTileId) : null;
 
     return (
@@ -47,15 +48,15 @@ const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, 
                 <div className="space-y-6">
                     <div>
                         <label htmlFor="site-name-input" className="block text-sm font-medium text-gray-700 mb-1">Site Name:</label>
-                        <input id="site-name-input" type="text" value={siteName} onChange={(e) => setSiteName(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        <input id="site-name-input" type="text" value={siteNameEn} onChange={(e) => setSiteNameEn(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md shadow-sm" />
                     </div>
                     <div>
                         <label htmlFor="header-content-textarea" className="block text-sm font-medium text-gray-700 mb-1">Header HTML Content:</label>
-                        <textarea id="header-content-textarea" value={headerContent} onChange={(e) => setHeaderContent(e.target.value)} rows={6} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
+                        <textarea id="header-content-textarea" value={headerContentEn} onChange={(e) => setHeaderContentEn(e.target.value)} rows={6} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
                     </div>
                     <div>
                         <label htmlFor="footer-content-textarea" className="block text-sm font-medium text-gray-700 mb-1">Footer HTML Content:</label>
-                        <textarea id="footer-content-textarea" value={footerContent} onChange={(e) => setFooterContent(e.target.value)} rows={4} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
+                        <textarea id="footer-content-textarea" value={footerContentEn} onChange={(e) => setFooterContentEn(e.target.value)} rows={4} className="w-full p-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm" />
                     </div>
                     <div className="p-4 bg-gray-50 rounded-md border">
                         <h3 className="text-lg font-semibold mb-3 text-gray-800">Global Help Link</h3>
@@ -63,14 +64,14 @@ const SiteDetailsEditor: React.FC<SiteDetailsEditorProps> = ({ currentSiteData, 
                             Link a global "Help" button in the deployed site's header to a specific tile.
                         </p>
                         <div className="flex items-center space-x-3">
-                             <button onClick={handleChooseHelpTile} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-semibold">Choose Help Tile</button>
-                             {helpTileId && (
+                            <button onClick={handleChooseHelpTile} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-semibold">Choose Help Tile</button>
+                            {helpTileId && (
                                 <button onClick={handleClearHelpTile} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-semibold">Clear</button>
-                             )}
+                            )}
                         </div>
                         {helpTile ? (
                             <p className="text-sm text-green-700 mt-3">
-                                Currently linked to: <span className="font-semibold">{helpTile.name}</span>
+                                Currently linked to: <span className="font-semibold">{translations[helpTile.nameKey]?.en || 'Tile'}</span>
                             </p>
                         ) : (
                             <p className="text-sm text-gray-500 mt-3">No help tile selected. The help button will not be shown.</p>

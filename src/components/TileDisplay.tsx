@@ -5,12 +5,13 @@ import { darkenColor } from '../utils/colors';
 
 interface TileDisplayProps {
     tile: Tile;
+    translations: import('../types').TranslationDictionary;
     onEdit: (tile: Tile) => void;
     onDelete: (tileId: string, parentId: string | null) => void;
     onAddChild: (parentId: string) => void;
     onReorder: (draggedId: string, droppedOnId: string) => void;
     parentId: string | null;
-    onNavigateToChildren: (tileId:string) => void;
+    onNavigateToChildren: (tileId: string) => void;
     onNavigateToTile: (tileId: string) => void;
     onPlayVideo: (url: string) => void;
     isBuilderMode: boolean;
@@ -19,7 +20,7 @@ interface TileDisplayProps {
     onHighlightComplete?: () => void;
 }
 
-const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAddChild, onReorder, parentId, onNavigateToChildren, onNavigateToTile, onPlayVideo, isBuilderMode, isSelectedParent, isHighlighted, onHighlightComplete }) => {
+const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, onDelete, onAddChild, onReorder, parentId, onNavigateToChildren, onNavigateToTile, onPlayVideo, isBuilderMode, isSelectedParent, isHighlighted, onHighlightComplete }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     const dragCounter = useRef(0);
     const tileRef = useRef<HTMLDivElement>(null);
@@ -28,17 +29,17 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
     useEffect(() => {
         if (isHighlighted && tileRef.current) {
             tileRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
+
             const scrollTimeout = setTimeout(() => {
                 setIsAnimating(true);
-                
+
                 const animationTimeout = setTimeout(() => {
                     setIsAnimating(false);
                     if (onHighlightComplete) {
                         onHighlightComplete();
                     }
                 }, 7500);
-                
+
                 return () => clearTimeout(animationTimeout);
             }, 300);
 
@@ -71,7 +72,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
         dragCounter.current++;
         setIsDragOver(true);
     };
-    
+
     const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
         if (!isBuilderMode) return;
         e.preventDefault();
@@ -80,7 +81,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             setIsDragOver(false);
         }
     };
-    
+
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         if (!isBuilderMode) return;
         e.preventDefault();
@@ -103,12 +104,13 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
         const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         return luminance > 160 ? '#333333' : '#FFFFFF';
     };
-    
+
     // Heuristic to identify simple, button-like tiles that should be square on mobile
-    const isSimpleButtonTile = 
-        tile.logoUrl && 
-        !tile.useLogoAsBackground && 
-        (!tile.description || !tile.isVisible.description) &&
+    const tileDescription = translations[tile.descriptionKey]?.en || '';
+    const isSimpleButtonTile =
+        tile.logoUrl &&
+        !tile.useLogoAsBackground &&
+        (!tileDescription || !tile.isVisible.description) &&
         (!tile.overviewVideo || !tile.isVisible.overviewVideo) &&
         (!tile.trainingVideos?.length || !tile.isVisible.trainingVideos);
 
@@ -125,7 +127,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
         }
     }
 
-    const renderContent = (key: keyof Tile, value: any) => {
+    const renderContent = (key: keyof Tile | 'description', value: any) => {
         if (!tile.isVisible[key as keyof typeof tile.isVisible]) return null;
 
         const labelColor = tile.isVisible.color ? dynamicTextColor : '#374151';
@@ -138,7 +140,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                     <div className="mt-4 text-center">
                         <button onClick={(e) => { e.stopPropagation(); onPlayVideo(value); }} className="inline-block relative group" aria-label="Play overview video">
                             <img src={tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale"} alt="Overview Video Thumbnail" className="rounded-md shadow-md group-hover:shadow-lg transition-shadow" />
-                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"></path></svg>
                             </div>
                         </button>
@@ -149,7 +151,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                     <div className="mt-4">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Training Videos:</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {value.map((video: {url: string, thumbnailUrl: string}, i: number) => (
+                            {value.map((video: { url: string, thumbnailUrl: string }, i: number) => (
                                 <button key={i} onClick={(e) => { e.stopPropagation(); onPlayVideo(video.url); }} className="inline-block text-center relative group" aria-label={`Play training video ${i + 1}`}>
                                     <img src={video.thumbnailUrl || `https://picsum.photos/100/60?grayscale&random=${i}`} alt={`Training Video Thumbnail ${i + 1}`} className="rounded-md shadow-sm group-hover:shadow-md transition-shadow w-full" />
                                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -172,9 +174,9 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
             case 'links':
                 return value && value.length > 0 && (
                     <div className="mt-4 pt-2 border-t border-gray-200">
-                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Links:</h4> 
+                        <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Links:</h4>
                         <div className="flex flex-wrap gap-2">
-                            {value.map((link: {name: string, url: string}, i: number) => (
+                            {value.map((link: { name: string, url: string }, i: number) => (
                                 <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-lg text-center transition-colors shadow">
                                     {link.name}
                                 </a>
@@ -187,7 +189,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                     <div className="mt-4 pt-2 border-t border-gray-200">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Resources:</h4>
                         <div className="flex flex-wrap gap-2">
-                            {value.map((resource: {name: string, url: string}, i: number) => (
+                            {value.map((resource: { name: string, url: string }, i: number) => (
                                 <a key={i} href={resource.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-lg text-center transition-colors shadow">
                                     {resource.name}
                                 </a>
@@ -200,7 +202,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                     <div className="mt-4 pt-2 border-t border-gray-200">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>Internal Links:</h4>
                         <div className="flex flex-wrap gap-2">
-                            {value.map((link: {name: string, targetTileId: string}, i: number) => (
+                            {value.map((link: { name: string, targetTileId: string }, i: number) => (
                                 <button key={i} onClick={(e) => { e.stopPropagation(); onNavigateToTile(link.targetTileId); }} className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg text-center transition-colors shadow">
                                     {link.name}
                                 </button>
@@ -212,7 +214,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                 return null;
         }
     };
-    
+
     const useLogoBg = tile.useLogoAsBackground && tile.logoUrl;
 
     const tileStyle: React.CSSProperties = {
@@ -250,7 +252,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
 
 
     return (
-        <div 
+        <div
             ref={tileRef}
             className={tileClasses}
             style={{ ...tileStyle, ...dynamicBorderStyle }}
@@ -275,24 +277,24 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                 </button>
             )}
             <div className={`relative z-20 flex flex-col flex-grow ${useLogoBg ? 'p-12' : 'p-4'}`}>
-                <div 
+                <div
                     className={`flex-grow ${isSimpleButtonTile ? 'flex flex-col items-center justify-center text-center' : ''}`}
                     onClick={() => { if (tile.children && tile.children.length > 0) onNavigateToChildren(tile.id); }}
                 >
                     {tile.isVisible.logo && tile.logoUrl && !tile.useLogoAsBackground && (
                         <div className="mb-4 text-center h-40 flex items-center justify-center">
-                            <img src={tile.logoUrl} alt={`${tile.name} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            <img src={tile.logoUrl} alt={`${translations[tile.nameKey]?.en || 'Tile'} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
                     <div className="flex justify-center items-center mb-2 gap-2">
                         {tile.isVisible.name && (
                             <h3 className="text-3xl font-semibold text-center" style={{ color: tile.isVisible.color ? dynamicTextColor : '#333333' }}>
-                                {tile.name}
+                                {translations[tile.nameKey]?.en || 'Tile'}
                             </h3>
                         )}
                         {isBuilderMode && tile.children && tile.children.length > 0 && (
-                            <span 
-                                className={`text-lg font-semibold px-2 py-1 rounded-full ${!tile.isVisible.color ? 'bg-blue-100 text-blue-800' : ''}`} 
+                            <span
+                                className={`text-lg font-semibold px-2 py-1 rounded-full ${!tile.isVisible.color ? 'bg-blue-100 text-blue-800' : ''}`}
                                 style={tile.isVisible.color ? badgeStyle : {}}
                                 aria-label={`${tile.children.length} child items`}
                             >
@@ -301,7 +303,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onDelete, onAdd
                         )}
                     </div>
 
-                    {renderContent('description', tile.description)}
+                    {renderContent('description' as keyof Tile, translations[tile.descriptionKey]?.en || '')}
                     {renderContent('overviewVideo', tile.overviewVideo)}
                     {renderContent('trainingVideos', tile.trainingVideos)}
                     {renderContent('documentation', tile.documentation)}

@@ -39,9 +39,16 @@ export interface TileVisibility {
   workflow: boolean;
 }
 
+export interface TranslationDictionary {
+  [key: string]: {
+    en: string;
+    es: string;
+  };
+}
+
 export interface TileProperties {
-  name: string;
-  description: string;
+  nameKey: string;
+  descriptionKey: string;
   color: string;
   font: string;
   logoUrl: string;
@@ -65,14 +72,15 @@ export interface Tile extends TileProperties {
 
 export interface Template {
   templateId: string;
-  name: string;
+  name: string; // Internal template UI name doesn't typically need translation
   properties: Partial<TileProperties>;
 }
 
 export interface SiteData {
-  siteName: string;
-  headerContent: string;
-  footerContent: string;
+  siteNameKey: string;
+  headerContentKey: string;
+  footerContentKey: string;
+  translations: TranslationDictionary;
   tiles: Tile[];
   templates: Template[];
   helpTileId?: string;

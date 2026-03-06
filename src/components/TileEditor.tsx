@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Tile, Template, Link, Resource, TrainingVideo, InternalLink } from '../types';
+import type { Tile, Template, InternalLink, TranslationDictionary } from '../types';
 import { defaultTileProperties } from '../constants';
 import { generateUniqueId } from '../utils/id';
 import { generateContent, findVideoWithAi, generateImageWithAi, generateDesignSuggestionsWithAi } from '../utils/aiUtils';
@@ -11,15 +11,18 @@ import PromptModal from './PromptModal';
 interface TileEditorProps {
     tile: Tile;
     onClose: () => void;
-    onSave: (tile: Tile) => void;
+    onSave: (tile: Tile, updatedTranslations: TranslationDictionary) => void;
     onSaveAsTemplate: (tile: Tile) => void;
     templates: Template[];
     onShowTilePicker: (onSelect: (tile: Tile) => void) => void;
     findTileById: (id: string) => Tile | null;
+    translations: TranslationDictionary;
 }
 
-const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAsTemplate, templates, onShowTilePicker, findTileById }) => {
+const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, onSave, onSaveAsTemplate, templates, onShowTilePicker, findTileById }) => {
     const [editedTile, setEditedTile] = useState<Tile>(tile);
+    const [nameEn, setNameEn] = useState(translations[tile.nameKey]?.en || '');
+    const [descriptionEn, setDescriptionEn] = useState(translations[tile.descriptionKey]?.en || '');
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [aiPromptState, setAiPromptState] = useState<{
         isOpen: boolean;
@@ -77,7 +80,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
     };
 
     const handleAddInternalLink = (targetTile: Tile) => {
-        const newLink: InternalLink = { name: targetTile.name, targetTileId: targetTile.id, id: generateUniqueId() };
+        const newLink: InternalLink = { name: translations[targetTile.nameKey]?.en || 'Tile', targetTileId: targetTile.id, id: generateUniqueId() };
         setEditedTile(prev => ({ ...prev, internalLinks: [...(prev.internalLinks || []), newLink] }));
     };
 
@@ -108,8 +111,14 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
         });
     };
 
-    const handleSave = () => onSave(editedTile);
-    
+    const handleSave = () => {
+        const updatedTranslations = { ...translations };
+        updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: updatedTranslations[editedTile.nameKey]?.es || '' };
+        updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: updatedTranslations[editedTile.descriptionKey]?.es || '' };
+
+        onSave(editedTile, updatedTranslations);
+    };
+
     const handleSaveTemplate = () => {
         onSaveAsTemplate(editedTile);
     };
@@ -127,13 +136,13 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
             }));
         }
     };
-    
+
     const handleGenerateClick = (field: 'name' | 'description') => {
         setAiPromptState({
             isOpen: true,
             title: `Generate ${field.charAt(0).toUpperCase() + field.slice(1)} with AI`,
             label: field === 'name' ? 'Describe the tile\'s purpose:' : 'What should the description be about?',
-            defaultValue: field === 'description' ? editedTile.name : '',
+            defaultValue: field === 'description' ? nameEn : '',
             isLoading: false,
             fieldToUpdate: field,
         });
@@ -147,11 +156,15 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
             const prompt = aiPromptState.fieldToUpdate === 'name'
                 ? `Based on the following description, generate a concise and professional tile name (3-5 words max): "${userInput}"`
                 : `Based on the following topic, generate a clear and informative tile description (2-3 sentences): "${userInput}"`;
-            
+
             const generatedText = await generateContent(prompt);
 
             if (generatedText) {
-                setEditedTile(prev => ({ ...prev, [aiPromptState.fieldToUpdate]: generatedText }));
+                if (aiPromptState.fieldToUpdate === 'name') {
+                    setNameEn(generatedText);
+                } else {
+                    setDescriptionEn(generatedText);
+                }
             } else {
                 alert('AI generation failed. The model returned an empty response. Please try again.');
             }
@@ -188,7 +201,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
             );
             if (!shouldOverwrite) return;
         }
-        
+
         try {
             const newThumbnailUrl = await getThumbnailUrl(videoUrl);
             if (newThumbnailUrl) {
@@ -243,7 +256,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
             setAiVideoPromptState(null);
         }
     };
-    
+
     const handleAiVideoPromptCancel = () => {
         setAiVideoPromptState(null);
     };
@@ -315,7 +328,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                 <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                     <div className="flex justify-between items-center mb-4 border-b pb-2">
-                        <h2 className="text-2xl font-bold text-gray-800">Edit Tile: {editedTile.name}</h2>
+                        <h2 className="text-2xl font-bold text-gray-800">Edit Tile: {nameEn || 'Untitled'}</h2>
                         <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl font-semibold">&times;</button>
                     </div>
 
@@ -323,16 +336,16 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                         <div>
                             {/* Templates */}
                             <div className="mb-6 p-4 bg-gray-50 rounded-md border">
-                            <h3 className="text-lg font-semibold mb-3">Templates</h3>
-                            <div className="flex items-center space-x-2 mb-3">
-                                <label htmlFor="template-select" className="sr-only">Select a template to apply</label>
-                                <select id="template-select" value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)} className="flex-grow p-2 border rounded-md shadow-sm">
-                                    <option value="">Select a template...</option>
-                                    {templates.map(t => <option key={t.templateId} value={t.templateId}>{t.name}</option>)}
-                                </select>
-                                <button onClick={handleApplyTemplate} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-semibold">Apply</button>
-                            </div>
-                            <button onClick={handleSaveTemplate} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold">Save as New Template</button>
+                                <h3 className="text-lg font-semibold mb-3">Templates</h3>
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <label htmlFor="template-select" className="sr-only">Select a template to apply</label>
+                                    <select id="template-select" value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)} className="flex-grow p-2 border rounded-md shadow-sm">
+                                        <option value="">Select a template...</option>
+                                        {templates.map(t => <option key={t.templateId} value={t.templateId}>{t.name}</option>)}
+                                    </select>
+                                    <button onClick={handleApplyTemplate} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-semibold">Apply</button>
+                                </div>
+                                <button onClick={handleSaveTemplate} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-semibold">Save as New Template</button>
                             </div>
                             {/* General */}
                             <div className="mb-6 p-4 bg-gray-50 rounded-md border">
@@ -343,15 +356,15 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                                         <SparklesIcon className="h-4 w-4 mr-1" /> Generate
                                     </button>
                                 </div>
-                                <input type="text" id="tile-name" name="name" value={editedTile.name} onChange={handleChange} className="w-full p-2 border rounded-md mb-3" />
-                                
+                                <input type="text" id="tile-name" name="name" value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="w-full p-2 border rounded-md mb-3" />
+
                                 <div className="flex items-center justify-between mb-1">
                                     <label htmlFor="tile-description" className="block text-sm font-medium">Description</label>
                                     <button onClick={() => handleGenerateClick('description')} className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold" aria-label="Generate Description with AI">
                                         <SparklesIcon className="h-4 w-4 mr-1" /> Generate
                                     </button>
                                 </div>
-                                <textarea id="tile-description" name="description" value={editedTile.description} onChange={handleChange} rows={3} className="w-full p-2 border rounded-md" />
+                                <textarea id="tile-description" name="description" value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} rows={3} className="w-full p-2 border rounded-md" />
                             </div>
                             <div className="mb-6 p-4 bg-gray-50 rounded-md border">
                                 <h3 className="text-lg font-semibold mb-3">Access Control</h3>
@@ -380,15 +393,15 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                                 </div>
                                 <div className="grid grid-cols-1 gap-4">
                                     <div>
-                                    <label htmlFor="tile-color" className="block text-sm font-medium">Background Color</label>
-                                    <input type="color" id="tile-color" name="color" value={editedTile.color} onChange={handleChange} className="w-full h-10 p-1 border rounded-md" disabled={editedTile.useLogoAsBackground} />
+                                        <label htmlFor="tile-color" className="block text-sm font-medium">Background Color</label>
+                                        <input type="color" id="tile-color" name="color" value={editedTile.color} onChange={handleChange} className="w-full h-10 p-1 border rounded-md" disabled={editedTile.useLogoAsBackground} />
                                     </div>
                                 </div>
                                 <label className="flex items-center space-x-2 mt-4">
-                                        <input type="checkbox" id="use-logo-as-background" name="useLogoAsBackground" checked={editedTile.useLogoAsBackground || false} onChange={handleChange} />
-                                        {/* FIX: The htmlFor attribute is not valid on a span element. The wrapping label implicitly links the text to the checkbox. */}
-                                        <span>Use Logo as Background</span>
-                                    </label>
+                                    <input type="checkbox" id="use-logo-as-background" name="useLogoAsBackground" checked={editedTile.useLogoAsBackground || false} onChange={handleChange} />
+                                    {/* FIX: The htmlFor attribute is not valid on a span element. The wrapping label implicitly links the text to the checkbox. */}
+                                    <span>Use Logo as Background</span>
+                                </label>
                                 <label htmlFor="tile-font" className="block text-sm font-medium mt-3">Font</label>
                                 <select id="tile-font" name="font" value={editedTile.font} onChange={handleChange} className="w-full p-2 border rounded-md">
                                     {fontOptions.map(font => <option key={font} value={font}>{font}</option>)}
@@ -418,7 +431,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                                     </button>
                                 </div>
                                 <input type="url" id="tile-logo-url" name="logoUrl" value={editedTile.logoUrl || ''} onChange={handleChange} className="w-full p-2 border rounded-md mb-3" placeholder="https://example.com/logo.png" />
-                                
+
                                 <div className="flex items-center justify-between mb-1">
                                     <label htmlFor="tile-overview-video" className="block text-sm font-medium">Overview Video URL</label>
                                     <button onClick={() => handleFindVideoClick()} className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold" aria-label="Find Video with AI">
@@ -436,67 +449,67 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                             <div className="mb-4 p-4 bg-gray-50 rounded-md border">
                                 <h3 className="text-lg font-semibold mb-2">Training Videos</h3>
                                 {editedTile.trainingVideos.map((item, index) => (
-                                <div key={index} className="space-y-2 mb-3 p-2 border-b last:border-b-0 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <input 
-                                            type="url" 
-                                            placeholder="Video URL" 
-                                            aria-label={`URL for training video ${index + 1}`}
-                                            value={item.url || ''} 
-                                            onChange={e => handleListChange('trainingVideos', index, 'url', e.target.value)}
-                                            onBlur={(e) => handleVideoUrlBlur(e, 'training', index)}
-                                            className="w-full p-2 border rounded-md flex-grow"
+                                    <div key={index} className="space-y-2 mb-3 p-2 border-b last:border-b-0 pb-3">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="url"
+                                                placeholder="Video URL"
+                                                aria-label={`URL for training video ${index + 1}`}
+                                                value={item.url || ''}
+                                                onChange={e => handleListChange('trainingVideos', index, 'url', e.target.value)}
+                                                onBlur={(e) => handleVideoUrlBlur(e, 'training', index)}
+                                                className="w-full p-2 border rounded-md flex-grow"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleFindVideoClick(index)}
+                                                className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold p-2 rounded-md hover:bg-blue-50 flex-shrink-0"
+                                                aria-label="Find Training Video with AI"
+                                            >
+                                                <FilmIcon className="h-4 w-4 mr-1" /> Find
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="url"
+                                            placeholder="Thumbnail URL"
+                                            aria-label={`Thumbnail URL for training video ${index + 1}`}
+                                            value={item.thumbnailUrl || ''}
+                                            onChange={e => handleListChange('trainingVideos', index, 'thumbnailUrl', e.target.value)}
+                                            className="w-full p-2 border rounded-md"
                                         />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => handleFindVideoClick(index)} 
-                                            className="flex items-center text-xs text-blue-600 hover:text-blue-800 font-semibold p-2 rounded-md hover:bg-blue-50 flex-shrink-0" 
-                                            aria-label="Find Training Video with AI"
-                                        >
-                                            <FilmIcon className="h-4 w-4 mr-1" /> Find
-                                        </button>
+                                        <button type="button" onClick={() => handleRemoveListItem('trainingVideos', index)} className="text-red-500 text-sm hover:underline">Remove</button>
                                     </div>
-                                    <input 
-                                        type="url" 
-                                        placeholder="Thumbnail URL" 
-                                        aria-label={`Thumbnail URL for training video ${index + 1}`}
-                                        value={item.thumbnailUrl || ''} 
-                                        onChange={e => handleListChange('trainingVideos', index, 'thumbnailUrl', e.target.value)}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                    <button type="button" onClick={() => handleRemoveListItem('trainingVideos', index)} className="text-red-500 text-sm hover:underline">Remove</button>
-                                </div>
                                 ))}
                                 <button onClick={() => handleAddListItem('trainingVideos')} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Add</button>
                             </div>
                             {/* Links and Resources */}
                             {[{ title: 'Links', name: 'links' }, { title: 'Resources', name: 'resources' }].map(list => (
-                            <div key={list.name} className="mb-4 p-4 bg-gray-50 rounded-md border">
-                                <h3 className="text-lg font-semibold mb-2">{list.title}</h3>
-                                {editedTile[list.name as 'links' | 'resources'].map((item, index) => (
-                                <div key={index} className="space-y-2 mb-3 p-2 border-b last:border-b-0 pb-3">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input type="text" placeholder="Name" aria-label={`Name for ${list.title.slice(0, -1)} ${index + 1}`} value={item.name || ''} onChange={e => handleListChange(list.name as 'links' | 'resources', index, 'name', e.target.value)} className="w-full p-2 border rounded-md" />
-                                        <input type="url" placeholder="URL" aria-label={`URL for ${list.title.slice(0, -1)} ${index + 1}`} value={item.url || ''} onChange={e => handleListChange(list.name as 'links' | 'resources', index, 'url', e.target.value)} className="w-full p-2 border rounded-md" />
-                                    </div>
-                                    <button onClick={() => handleRemoveListItem(list.name as 'links' | 'resources', index)} className="text-red-500 text-sm hover:underline">Remove</button>
+                                <div key={list.name} className="mb-4 p-4 bg-gray-50 rounded-md border">
+                                    <h3 className="text-lg font-semibold mb-2">{list.title}</h3>
+                                    {editedTile[list.name as 'links' | 'resources'].map((item, index) => (
+                                        <div key={index} className="space-y-2 mb-3 p-2 border-b last:border-b-0 pb-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="text" placeholder="Name" aria-label={`Name for ${list.title.slice(0, -1)} ${index + 1}`} value={item.name || ''} onChange={e => handleListChange(list.name as 'links' | 'resources', index, 'name', e.target.value)} className="w-full p-2 border rounded-md" />
+                                                <input type="url" placeholder="URL" aria-label={`URL for ${list.title.slice(0, -1)} ${index + 1}`} value={item.url || ''} onChange={e => handleListChange(list.name as 'links' | 'resources', index, 'url', e.target.value)} className="w-full p-2 border rounded-md" />
+                                            </div>
+                                            <button onClick={() => handleRemoveListItem(list.name as 'links' | 'resources', index)} className="text-red-500 text-sm hover:underline">Remove</button>
+                                        </div>
+                                    ))}
+                                    <button onClick={() => handleAddListItem(list.name as 'links' | 'resources')} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Add</button>
                                 </div>
-                                ))}
-                                <button onClick={() => handleAddListItem(list.name as 'links' | 'resources')} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Add</button>
-                            </div>
                             ))}
                             {/* Internal Links */}
                             <div className="mb-4 p-4 bg-gray-50 rounded-md border">
-                            <h3 className="text-lg font-semibold mb-2">Internal Links</h3>
+                                <h3 className="text-lg font-semibold mb-2">Internal Links</h3>
                                 {(editedTile.internalLinks || []).map((link, index) => (
                                     <div key={index} className="flex items-center space-x-2 mb-2">
                                         <input type="text" placeholder="Link Name" aria-label={`Name for internal link ${index + 1}`} value={link.name} onChange={e => handleListChange('internalLinks', index, 'name', e.target.value)} className="flex-grow p-2 border rounded-md" />
                                         <button onClick={() => handleRemoveListItem('internalLinks', index)} className="text-red-500 text-sm hover:underline">Remove</button>
                                     </div>
                                 ))}
-                            <button onClick={() => onShowTilePicker(handleAddInternalLink)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">Add Internal Link</button>
+                                <button onClick={() => onShowTilePicker(handleAddInternalLink)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">Add Internal Link</button>
                             </div>
-                             {/* Workflow */}
+                            {/* Workflow */}
                             <div className="mb-4 p-4 bg-gray-50 rounded-md border">
                                 <h3 className="text-lg font-semibold mb-2">Workflow Link</h3>
                                 <p className="text-sm text-gray-500 mb-3">
@@ -505,7 +518,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                                 {editedTile.workflow?.nextTileId ? (
                                     <div className="flex items-center justify-between p-2 bg-blue-50 rounded-md">
                                         <span className="text-sm text-blue-800">
-                                            Next Tile: <span className="font-semibold">{findTileById(editedTile.workflow.nextTileId)?.name || 'Unknown Tile'}</span>
+                                            Next Tile: <span className="font-semibold">{translations[findTileById(editedTile.workflow.nextTileId)?.nameKey || '']?.en || 'Unknown Tile'}</span>
                                         </span>
                                         <button onClick={handleClearNextTile} className="text-red-500 text-sm hover:underline font-semibold">Clear</button>
                                     </div>
@@ -534,7 +547,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                     confirmText="Generate"
                 />
             )}
-             {aiVideoPromptState?.isOpen && (
+            {aiVideoPromptState?.isOpen && (
                 <PromptModal
                     isOpen={aiVideoPromptState.isOpen}
                     title="Find Video with AI"
@@ -546,12 +559,12 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                     confirmText="Search"
                 />
             )}
-             {aiImagePromptState?.isOpen && (
+            {aiImagePromptState?.isOpen && (
                 <PromptModal
                     isOpen={aiImagePromptState.isOpen}
                     title="Generate Logo with AI"
                     label="Describe the logo you want to create:"
-                    defaultValue={`A clean, modern logo for "${editedTile.name}". Note: The tile's background will be set to white to match the generated logo.`}
+                    defaultValue={`A clean, modern logo for "${nameEn || 'the tile'}". Note: The tile's background will be set to white to match the generated logo.`}
                     onConfirm={handleAiImagePromptConfirm}
                     onCancel={handleAiImagePromptCancel}
                     isLoading={aiImagePromptState.isLoading}
@@ -563,7 +576,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, onClose, onSave, onSaveAs
                     isOpen={aiDesignPromptState.isOpen}
                     title="AI Designer"
                     label="Describe the mood, brand, or topic:"
-                    defaultValue={`A design for a tile about "${editedTile.name}". The mood should be...`}
+                    defaultValue={`A design for a tile about "${nameEn || 'the tile'}". The mood should be...`}
                     onConfirm={handleAiDesignerConfirm}
                     onCancel={handleAiDesignerCancel}
                     isLoading={aiDesignPromptState.isLoading}

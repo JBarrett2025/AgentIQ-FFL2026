@@ -43,15 +43,16 @@ const SitePreviewer: React.FC<SitePreviewerProps> = ({ siteData, currentPath, on
                     <TileDisplay
                         key={tile.id}
                         tile={tile}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                        onAddChild={() => {}}
-                        onReorder={() => {}}
-                        parentId={null} 
-                        onNavigateToChildren={onNavigateToChildren} 
+                        translations={siteData.translations}
+                        onEdit={() => { }}
+                        onDelete={() => { }}
+                        onAddChild={() => { }}
+                        onReorder={() => { }}
+                        parentId={null}
+                        onNavigateToChildren={onNavigateToChildren}
                         onNavigateToTile={onNavigateToTile}
                         onPlayVideo={onPlayVideo}
-                        isBuilderMode={false} 
+                        isBuilderMode={false}
                         isSelectedParent={currentPath.length > 0 && currentPath[currentPath.length - 1] === tile.id}
                         isHighlighted={tile.id === highlightedTileId}
                         onHighlightComplete={onHighlightComplete}

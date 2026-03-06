@@ -109,9 +109,10 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         const mainClickAction = () => { _internalOnTileClick(tile); if (tile.children && tile.children.length > 0) onNavigateToChildren(tile.id); };
 
         const content: any[] = [];
-        if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${tile.name} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
-        if (isVisible.name) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, tile.name)); }
-        if (isVisible.description && tile.description) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, tile.description)); }
+        if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${siteData.translations[tile.nameKey]?.en || 'Tile'} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
+        if (isVisible.name) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, siteData.translations[tile.nameKey]?.en || 'Tile')); }
+        const descriptionText = siteData.translations[tile.descriptionKey]?.en || '';
+        if (isVisible.description && descriptionText) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, descriptionText)); }
         if (isVisible.overviewVideo && tile.overviewVideo) { content.push(h('div', { key: 'overview', className: "mt-4 text-center" }, h('button', { onClick: (e: any) => { e.stopPropagation(); onPlayVideo(tile.overviewVideo) }, className: "inline-block relative group" }, h('img', { src: tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale", alt: "Overview", className: "rounded-md shadow-md" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-12 h-12 text-white" }))))); }
         if (isVisible.trainingVideos && tile.trainingVideos && tile.trainingVideos.length > 0) {
             content.push(h('div', { key: 'training', className: "mt-4" },
@@ -233,8 +234,8 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
 
         useEffect(() => { _internalOnReady(); }, [_internalOnReady]);
 
-        const sanitizedHeader = useMemo(() => sanitizeHTML(siteData.headerContent), [siteData.headerContent]);
-        // const sanitizedFooter = useMemo(() => sanitizeHTML(siteData.footerContent), [siteData.footerContent]);
+        const sanitizedHeader = useMemo(() => sanitizeHTML(siteData.translations[siteData.headerContentKey]?.en || ''), [siteData.headerContentKey, siteData.translations]);
+        // const sanitizedFooter = useMemo(() => sanitizeHTML(siteData.translations[siteData.footerContentKey]?.en || ''), [siteData.footerContentKey, siteData.translations]);
         const tilesToDisplay = getTilesToDisplay();
 
         const header = h('header', { className: "bg-white shadow-md py-4 md:py-6 mb-10" },
@@ -273,7 +274,7 @@ export const generateDeploymentHtml = (siteData: SiteData): string => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${siteData.siteName}</title>
+    <title>${siteData.translations[siteData.siteNameKey]?.en || 'Site'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -434,7 +435,7 @@ export const generateComponentJavaScript = (siteData: SiteData): string => {
             const props = {
                 ref: this.#reactRef,
                 initialAccessTags: initialAccessTags,
-                _internalOnTileClick: (tile) => this.dispatchEvent(new CustomEvent('tileClicked', { detail: { tileId: tile.id, tileName: tile.name, tile } })),
+                _internalOnTileClick: (tile) => this.dispatchEvent(new CustomEvent('tileClicked', { detail: { tileId: tile.id, tileName: siteData.translations[tile.nameKey]?.en || 'Tile', tile } })),
                 _internalOnNavigate: (data) => this.dispatchEvent(new CustomEvent('navigationChanged', { detail: { currentPath: data.path, currentParentTile: data.tile } })),
                 _internalOnReady: () => this.dispatchEvent(new CustomEvent('componentReady', { bubbles: true, composed: true, detail: { component: this } }))
             };

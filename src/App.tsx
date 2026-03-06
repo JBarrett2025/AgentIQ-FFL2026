@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { SiteData, Tile, Template } from './types';
+import type { SiteData, Tile, Template, TranslationDictionary } from './types';
 import { defaultSiteProperties, defaultTileProperties } from './constants';
 import { generateUniqueId } from './utils/id';
 import { findTileById, findAndUpdateTile, findAndAddChildTile, findPathToTile } from './utils/tileUtils';
@@ -67,7 +67,7 @@ const App: React.FC = () => {
             const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (storedData) {
                 const parsedData = JSON.parse(storedData);
-                
+
                 const ensureVisibility = (tiles: any[]): Tile[] => {
                     return tiles.map(tile => {
                         const { borderColor, ...restOfTile } = tile;
@@ -79,22 +79,24 @@ const App: React.FC = () => {
                         };
                     });
                 };
-                
+
                 const ensuredTemplates = (parsedData.templates || []).map((template: any) => {
-                     const { borderColor, ...restOfProps } = template.properties;
-                     const { borderColor: vBorderColor, ...restOfVisibility } = (template.properties.isVisible || {});
+                    const { borderColor, ...restOfProps } = template.properties;
+                    const { borderColor: vBorderColor, ...restOfVisibility } = (template.properties.isVisible || {});
                     return {
-                    ...template,
-                    properties: {
-                        ...restOfProps,
-                        isVisible: { ...defaultTileProperties.isVisible, ...restOfVisibility }
+                        ...template,
+                        properties: {
+                            ...restOfProps,
+                            isVisible: { ...defaultTileProperties.isVisible, ...restOfVisibility }
+                        }
                     }
-                }});
+                });
 
                 setSiteData({
-                    siteName: parsedData.siteName || defaultSiteProperties.siteName,
-                    headerContent: parsedData.headerContent || defaultSiteProperties.headerContent,
-                    footerContent: parsedData.footerContent || defaultSiteProperties.footerContent,
+                    siteNameKey: parsedData.siteNameKey || defaultSiteProperties.siteNameKey,
+                    headerContentKey: parsedData.headerContentKey || defaultSiteProperties.headerContentKey,
+                    footerContentKey: parsedData.footerContentKey || defaultSiteProperties.footerContentKey,
+                    translations: parsedData.translations || defaultSiteProperties.translations,
                     tiles: ensureVisibility(parsedData.tiles || []),
                     templates: ensuredTemplates,
                     helpTileId: parsedData.helpTileId
@@ -127,7 +129,7 @@ const App: React.FC = () => {
             return updatedSiteData;
         });
     }, [saveSiteData]);
-    
+
     const showConfirmation = (title: string, message: string, onConfirm: () => void, isDanger: boolean = false) => {
         setConfirmationState({
             isOpen: true,
@@ -172,15 +174,15 @@ const App: React.FC = () => {
     const handleAddTileToCurrentLevel = useCallback((templateProperties: Partial<Tile> = {}) => {
         const newTile: Tile = {
             id: generateUniqueId(),
-            ...defaultTileProperties, 
-            ...templateProperties,    
-            children: [],             
-            isVisible: {              
+            ...defaultTileProperties,
+            ...templateProperties,
+            children: [],
+            isVisible: {
                 ...defaultTileProperties.isVisible,
                 ...(templateProperties.isVisible || {})
             }
         };
-        
+
         let updatedTiles;
         if (currentPath.length > 0) {
             const currentParentId = currentPath[currentPath.length - 1];
@@ -195,8 +197,8 @@ const App: React.FC = () => {
         const newTile: Tile = {
             id: generateUniqueId(),
             ...defaultTileProperties,
-            name: "New Child Tile",
-            description: "A new tile created as a child.",
+            nameKey: `new_child_tile_${Date.now()}`,
+            descriptionKey: `new_child_tile_desc_${Date.now()}`,
             children: [],
             isVisible: { ...defaultTileProperties.isVisible }
         };
@@ -220,7 +222,7 @@ const App: React.FC = () => {
                 }
                 updateAndSaveSiteData({ tiles: updatedTiles });
             },
-            true 
+            true
         );
     }, [siteData.tiles, updateAndSaveSiteData]);
 
@@ -235,29 +237,33 @@ const App: React.FC = () => {
         setEditingTile(tileWithFullVisibility);
     }, []);
 
-    const handleSaveEditedTile = useCallback((updatedTile: Tile) => {
-        const updatedTiles = findAndUpdateTile(siteData.tiles, updatedTile.id, () => updatedTile);
-        updateAndSaveSiteData({ tiles: updatedTiles });
-        setEditingTile(null); 
-    }, [siteData.tiles, updateAndSaveSiteData]);
+    const handleSaveEditedTile = useCallback((updatedTile: Tile, updatedTranslations?: TranslationDictionary) => {
+        setSiteData(prev => {
+            const updatedTiles = findAndUpdateTile(prev.tiles, updatedTile.id, () => updatedTile);
+            const newSiteData = { ...prev, tiles: updatedTiles, translations: updatedTranslations || prev.translations };
+            saveSiteData(newSiteData);
+            return newSiteData;
+        });
+        setEditingTile(null);
+    }, [saveSiteData]);
 
     const handleReorderTiles = useCallback((draggedId: string, droppedOnId: string) => {
         const reorder = (list: Tile[]): Tile[] => {
             const draggedIndex = list.findIndex(t => t.id === draggedId);
             const targetIndex = list.findIndex(t => t.id === droppedOnId);
-    
+
             if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
                 return list;
             }
-    
+
             const newList = [...list];
             const [draggedItem] = newList.splice(draggedIndex, 1);
             newList.splice(targetIndex, 0, draggedItem);
             return newList;
         };
-    
+
         const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
-    
+
         if (parentId) {
             const updatedTiles = findAndUpdateTile(siteData.tiles, parentId, (parentTile) => ({
                 ...parentTile,
@@ -283,7 +289,7 @@ const App: React.FC = () => {
                 };
                 updateAndSaveSiteData({ templates: [...siteData.templates, newTemplate] });
             },
-            `${tileToTemplate.name} Template`
+            (`${tileToTemplate.nameKey} Template`)
         );
     }, [siteData.templates, updateAndSaveSiteData]);
 
@@ -296,7 +302,7 @@ const App: React.FC = () => {
                 const updatedTemplates = siteData.templates.filter(t => t.templateId !== templateId);
                 updateAndSaveSiteData({ templates: updatedTemplates });
             },
-            true 
+            true
         );
     }, [siteData.templates, updateAndSaveSiteData]);
 
@@ -363,33 +369,41 @@ const App: React.FC = () => {
                 const newSiteData = { ...defaultSiteProperties };
                 setSiteData(newSiteData);
                 saveSiteData(newSiteData);
-        
+
                 setCurrentPath([]);
                 setNavigationHistory([[]]);
                 setIsViewingPreview(false);
-                
+
                 setIsNewSiteFlowActive(true);
                 setIsEditingSiteDetails(true);
             },
             true
         );
     }, [saveSiteData]);
-    
+
     const handleOpenEditSiteDetailsModal = useCallback(() => {
         setIsNewSiteFlowActive(false);
         setIsEditingSiteDetails(true);
     }, []);
 
-    const handleSaveSiteDetails = useCallback((details: Pick<SiteData, 'siteName' | 'headerContent' | 'footerContent' | 'helpTileId'>) => {
-        updateAndSaveSiteData({
-            siteName: details.siteName,
-            headerContent: details.headerContent,
-            footerContent: details.footerContent,
-            helpTileId: details.helpTileId,
+    const handleSaveSiteDetails = useCallback((details: Pick<SiteData, 'helpTileId'> & { siteNameEn: string, headerContentEn: string, footerContentEn: string }) => {
+        setSiteData(prev => {
+            const newTranslations = { ...prev.translations };
+            newTranslations[prev.siteNameKey] = { ...newTranslations[prev.siteNameKey], en: details.siteNameEn, es: newTranslations[prev.siteNameKey]?.es || '' };
+            newTranslations[prev.headerContentKey] = { ...newTranslations[prev.headerContentKey], en: details.headerContentEn, es: newTranslations[prev.headerContentKey]?.es || '' };
+            newTranslations[prev.footerContentKey] = { ...newTranslations[prev.footerContentKey], en: details.footerContentEn, es: newTranslations[prev.footerContentKey]?.es || '' };
+
+            const updatedSiteData = {
+                ...prev,
+                translations: newTranslations,
+                helpTileId: details.helpTileId,
+            };
+            saveSiteData(updatedSiteData);
+            return updatedSiteData;
         });
         setIsEditingSiteDetails(false);
         setIsNewSiteFlowActive(false);
-    }, [updateAndSaveSiteData]);
+    }, [saveSiteData]);
 
     const handleImportSiteFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -445,14 +459,15 @@ const App: React.FC = () => {
                             };
 
                             const newSiteData: SiteData = {
-                                siteName: importedData.siteName || defaultSiteProperties.siteName,
-                                headerContent: importedData.headerContent || defaultSiteProperties.headerContent,
-                                footerContent: importedData.footerContent || defaultSiteProperties.footerContent,
+                                siteNameKey: importedData.siteNameKey || defaultSiteProperties.siteNameKey,
+                                headerContentKey: importedData.headerContentKey || defaultSiteProperties.headerContentKey,
+                                footerContentKey: importedData.footerContentKey || defaultSiteProperties.footerContentKey,
+                                translations: importedData.translations || defaultSiteProperties.translations,
                                 tiles: sanitizeTiles(importedData.tiles || []),
                                 templates: sanitizeTemplates(importedData.templates || []),
                                 helpTileId: importedData.helpTileId,
                             };
-                            
+
                             setSiteData(() => {
                                 saveSiteData(newSiteData);
                                 return newSiteData;
@@ -462,7 +477,7 @@ const App: React.FC = () => {
                             setNavigationHistory([[]]);
                             setIsViewingPreview(false);
                         },
-                        true 
+                        true
                     );
                 } else {
                     setError("Invalid JSON file. Please ensure it has a 'tiles' array.");
@@ -483,7 +498,7 @@ const App: React.FC = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${siteData.siteName.replace(/\s+/g, '_').toLowerCase()}_site_data.json`;
+            a.download = `site_data.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -495,18 +510,19 @@ const App: React.FC = () => {
 
     const handleSaveSiteForDeployment = useCallback(() => {
         try {
-            // Pre-sanitize content before deployment for enhanced security
+            // Deploying the builder architecture for multi-lingual
             const deploymentSiteData = {
                 ...siteData,
-                headerContent: sanitizeHTML(siteData.headerContent),
-                footerContent: sanitizeHTML(siteData.footerContent),
+                headerContentKey: siteData.headerContentKey,
+                footerContentKey: siteData.footerContentKey,
+                translations: siteData.translations
             };
             const deployedHtmlContent = generateDeploymentHtml(deploymentSiteData);
             const blob = new Blob([deployedHtmlContent], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${siteData.siteName.replace(/\s+/g, '_').toLowerCase()}_deployed_site.html`;
+            a.download = `deployed_site.html`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -519,18 +535,19 @@ const App: React.FC = () => {
 
     const handleSaveSiteAsComponent = useCallback(() => {
         try {
-            // Pre-sanitize content before deployment for enhanced security
+            // Deploying the builder architecture for multi-lingual
             const deploymentSiteData = {
                 ...siteData,
-                headerContent: sanitizeHTML(siteData.headerContent),
-                footerContent: sanitizeHTML(siteData.footerContent),
+                headerContentKey: siteData.headerContentKey,
+                footerContentKey: siteData.footerContentKey,
+                translations: siteData.translations
             };
             const componentJsContent = generateComponentJavaScript(deploymentSiteData);
             const blob = new Blob([componentJsContent], { type: 'text/javascript' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${siteData.siteName.replace(/\s+/g, '_').toLowerCase()}_component.js`;
+            a.download = `component.js`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -572,8 +589,10 @@ const App: React.FC = () => {
     }, []);
 
     // Sanitize header and footer content for safe rendering within the builder UI.
-    const sanitizedHeader = useMemo(() => sanitizeHTML(siteData.headerContent), [siteData.headerContent]);
-    const sanitizedFooter = useMemo(() => sanitizeHTML(siteData.footerContent), [siteData.footerContent]);
+    const rawHeader = siteData.translations[siteData.headerContentKey]?.en || '';
+    const rawFooter = siteData.translations[siteData.footerContentKey]?.en || '';
+    const sanitizedHeader = useMemo(() => sanitizeHTML(rawHeader), [rawHeader]);
+    const sanitizedFooter = useMemo(() => sanitizeHTML(rawFooter), [rawFooter]);
 
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center bg-gray-100"><p className="text-xl text-gray-700">Loading site data...</p></div>;
@@ -591,7 +610,7 @@ const App: React.FC = () => {
 
     const tilesToDisplay = getTilesToDisplay();
     const currentParentTile = currentPath.length > 0 ? findTileById(siteData.tiles, currentPath[currentPath.length - 1]) : null;
-    const currentLevelTitle = currentParentTile ? `Editing Children of: ${currentParentTile.name}` : "Site Structure (Root Level)";
+    const currentLevelTitle = currentParentTile ? `Editing Children of: ${siteData.translations[currentParentTile.nameKey]?.en || 'Tile'}` : "Site Structure (Root Level)";
 
     return (
         <div className="p-6 md:p-10 bg-gray-100 min-h-screen">
@@ -628,7 +647,7 @@ const App: React.FC = () => {
                 </div>
 
                 {isViewingPreview ? (
-                    <SitePreviewer siteData={siteData} currentPath={currentPath} onNavigateToChildren={handleNavigateToChildren} findTileById={(id) => findTileById(siteData.tiles, id)} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} highlightedTileId={highlightedTileId} onHighlightComplete={handleHighlightComplete}/>
+                    <SitePreviewer siteData={siteData} currentPath={currentPath} onNavigateToChildren={handleNavigateToChildren} findTileById={(id) => findTileById(siteData.tiles, id)} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} highlightedTileId={highlightedTileId} onHighlightComplete={handleHighlightComplete} />
                 ) : (
                     <>
                         <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
@@ -651,7 +670,7 @@ const App: React.FC = () => {
                                 <p className="text-gray-600 text-center text-lg p-8 bg-white rounded-lg shadow-md col-span-full">No tiles at this level. Add one!</p>
                             ) : (
                                 tilesToDisplay.map((tile) => (
-                                    <TileDisplay key={tile.id} tile={tile} onEdit={handleEditTile} onDelete={handleDeleteTile} onAddChild={handleAddChildTile} onReorder={handleReorderTiles} parentId={currentPath.length > 0 ? currentPath[currentPath.length - 1] : null} onNavigateToChildren={handleNavigateToChildren} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} isBuilderMode={true} isSelectedParent={false} isHighlighted={tile.id === highlightedTileId} onHighlightComplete={handleHighlightComplete} />
+                                    <TileDisplay key={tile.id} tile={tile} translations={siteData.translations} onEdit={handleEditTile} onDelete={handleDeleteTile} onAddChild={handleAddChildTile} onReorder={handleReorderTiles} parentId={currentPath.length > 0 ? currentPath[currentPath.length - 1] : null} onNavigateToChildren={handleNavigateToChildren} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} isBuilderMode={true} isSelectedParent={false} isHighlighted={tile.id === highlightedTileId} onHighlightComplete={handleHighlightComplete} />
                                 ))
                             )}
                         </div>
@@ -680,10 +699,10 @@ const App: React.FC = () => {
             <footer className="bg-gray-800 text-white py-8 mt-16">
                 <div className="container mx-auto px-6 text-center" dangerouslySetInnerHTML={{ __html: sanitizedFooter }} />
             </footer>
-            
-            {editingTile && <TileEditor tile={editingTile} onClose={() => setEditingTile(null)} onSave={handleSaveEditedTile} onSaveAsTemplate={handleSaveAsTemplate} templates={siteData.templates} onShowTilePicker={handleShowTilePicker} findTileById={(id) => findTileById(siteData.tiles, id)} />}
-            {isEditingSiteDetails && <SiteDetailsEditor currentSiteData={siteData} onClose={() => { setIsEditingSiteDetails(false); setIsNewSiteFlowActive(false); }} onSave={handleSaveSiteDetails} isNewSiteFlow={isNewSiteFlowActive} onShowTilePicker={handleShowTilePicker} />}
-            {isTilePickerVisible && <TilePicker tiles={siteData.tiles} onClose={handleTilePickerClose} onSelect={handleTilePickerSelect} />}
+
+            {editingTile && <TileEditor tile={editingTile} translations={siteData.translations} onClose={() => setEditingTile(null)} onSave={handleSaveEditedTile} onSaveAsTemplate={handleSaveAsTemplate} templates={siteData.templates} onShowTilePicker={handleShowTilePicker} findTileById={(id) => findTileById(siteData.tiles, id)} />}
+            {isEditingSiteDetails && <SiteDetailsEditor currentSiteData={siteData} translations={siteData.translations} onClose={() => { setIsEditingSiteDetails(false); setIsNewSiteFlowActive(false); }} onSave={handleSaveSiteDetails} isNewSiteFlow={isNewSiteFlowActive} onShowTilePicker={handleShowTilePicker} />}
+            {isTilePickerVisible && <TilePicker tiles={siteData.tiles} translations={siteData.translations} onClose={handleTilePickerClose} onSelect={handleTilePickerSelect} />}
             {confirmationState?.isOpen && (
                 <ConfirmationModal
                     isOpen={confirmationState.isOpen}
@@ -694,7 +713,7 @@ const App: React.FC = () => {
                     isDanger={confirmationState.isDanger}
                 />
             )}
-             {promptState?.isOpen && (
+            {promptState?.isOpen && (
                 <PromptModal
                     isOpen={promptState.isOpen}
                     title={promptState.title}
