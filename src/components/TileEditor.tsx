@@ -57,10 +57,19 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
 
     useEffect(() => {
         setEditedTile(tile);
+
+        // Always initialize fields on tile change
         setNameEn(translations[tile.nameKey]?.en ?? '');
-        setNameEs(translations[tile.nameKey]?.es || '');
         setDescriptionEn(translations[tile.descriptionKey]?.en || '');
-        setDescriptionEs(translations[tile.descriptionKey]?.es || '');
+
+        // For Spanish, only auto-update from the dictionary if the local state is currently empty.
+        // This prevents the global AI sweep from accidentally overwriting a user who is actively typing.
+        if (!nameEs) {
+            setNameEs(translations[tile.nameKey]?.es || '');
+        }
+        if (!descriptionEs) {
+            setDescriptionEs(translations[tile.descriptionKey]?.es || '');
+        }
     }, [tile, translations]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
