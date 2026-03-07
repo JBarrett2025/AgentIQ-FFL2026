@@ -536,6 +536,8 @@ const App: React.FC = () => {
                                 const entries = Object.entries(dict);
                                 let hasUpdates = false;
                                 const updatedDict = { ...dict };
+                                let errorCount = 0;
+                                let lastErrorMsg = '';
 
                                 for (const [key, value] of entries) {
                                     if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
@@ -547,8 +549,15 @@ const App: React.FC = () => {
                                             }
                                         } catch (err) {
                                             console.warn(`Translation sweep failed for string: "${value.en}"`, err);
+                                            errorCount++;
+                                            lastErrorMsg = (err as Error).message;
                                         }
                                     }
+                                }
+
+                                if (errorCount > 0) {
+                                    console.error(`AI Translation Sweep failed on ${errorCount} items. Likely missing VITE_GEMINI_API_KEY.`);
+                                    alert(`AI Translation Sweep skipped ${errorCount} entries due to API error. Please ensure your VITE_GEMINI_API_KEY is configured in your .env file.\n\nError: ${lastErrorMsg}`);
                                 }
 
                                 // If translations occurred, push the updated dictionary into React State and LocalStorage

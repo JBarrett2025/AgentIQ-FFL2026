@@ -142,23 +142,29 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
         let finalNameEs = nameEs.trim();
         let finalDescriptionEs = descriptionEs.trim();
 
-        // Auto-translate name if English is provided but Spanish is empty
-        if (nameEn.trim() && !finalNameEs) {
-            finalNameEs = await requestTranslation(nameEn.trim(), 'es');
-            setNameEs(finalNameEs);
+        try {
+            // Auto-translate name if English is provided but Spanish is empty
+            if (nameEn.trim() && !finalNameEs) {
+                finalNameEs = await requestTranslation(nameEn.trim(), 'es');
+                setNameEs(finalNameEs);
+            }
+
+            // Auto-translate description if English is provided but Spanish is empty
+            if (descriptionEn.trim() && !finalDescriptionEs) {
+                finalDescriptionEs = await requestTranslation(descriptionEn.trim(), 'es');
+                setDescriptionEs(finalDescriptionEs);
+            }
+
+            updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: finalNameEs };
+            updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: finalDescriptionEs };
+
+            onSave(editedTile, updatedTranslations);
+        } catch (error) {
+            console.error('Translation Error during save:', error);
+            alert(`Auto-translation failed: ${(error as Error).message}. Please ensure your VITE_GEMINI_API_KEY is configured correctly in your .env file.`);
+        } finally {
+            setIsSaving(false);
         }
-
-        // Auto-translate description if English is provided but Spanish is empty
-        if (descriptionEn.trim() && !finalDescriptionEs) {
-            finalDescriptionEs = await requestTranslation(descriptionEn.trim(), 'es');
-            setDescriptionEs(finalDescriptionEs);
-        }
-
-        updatedTranslations[editedTile.nameKey] = { ...updatedTranslations[editedTile.nameKey], en: nameEn.trim(), es: finalNameEs };
-        updatedTranslations[editedTile.descriptionKey] = { ...updatedTranslations[editedTile.descriptionKey], en: descriptionEn.trim(), es: finalDescriptionEs };
-
-        onSave(editedTile, updatedTranslations);
-        setIsSaving(false);
     };
 
     const handleSaveTemplate = () => {

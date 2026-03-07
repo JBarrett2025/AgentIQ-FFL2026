@@ -26,6 +26,6 @@ export const requestTranslation = async (text: string, targetLanguageCode: strin
         return result || '';
     } catch (error) {
         console.error("Translation Engine Error:", error);
-        return '';
+        throw new Error(`Translation failed: ${(error as Error).message}`);
     }
 };
