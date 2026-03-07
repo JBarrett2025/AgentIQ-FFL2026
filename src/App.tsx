@@ -44,6 +44,7 @@ const App: React.FC = () => {
     const [tilePickerCallback, setTilePickerCallback] = useState<((tile: Tile) => void) | null>(null);
     const [highlightedTileId, setHighlightedTileId] = useState<string | null>(null);
     const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
+    const [builderLanguage, setBuilderLanguage] = useState<'en' | 'es'>('en');
 
 
     const [confirmationState, setConfirmationState] = useState<{
@@ -730,10 +731,21 @@ const App: React.FC = () => {
                     <button onClick={handleSaveSiteAsJson} className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 font-semibold">Save JSON</button>
                     <button onClick={handleSaveSiteForDeployment} className="px-4 py-2 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 font-semibold">Deploy HTML</button>
                     <button onClick={handleSaveSiteAsComponent} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 font-semibold">Deploy Component</button>
+                    <div className="flex items-center gap-2 border-l border-gray-300 pl-3 ml-3">
+                        <span className="text-sm font-medium text-gray-500 hidden sm:inline">Preview Language:</span>
+                        <select
+                            value={builderLanguage}
+                            onChange={(e) => setBuilderLanguage(e.target.value as 'en' | 'es')}
+                            className="p-2 border rounded-md shadow-sm bg-white font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                            <option value="en">English (EN)</option>
+                            <option value="es">Español (ES)</option>
+                        </select>
+                    </div>
                 </div>
 
                 {isViewingPreview ? (
-                    <SitePreviewer siteData={siteData} currentPath={currentPath} onNavigateToChildren={handleNavigateToChildren} findTileById={(id) => findTileById(siteData.tiles, id)} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} highlightedTileId={highlightedTileId} onHighlightComplete={handleHighlightComplete} />
+                    <SitePreviewer siteData={siteData} currentPath={currentPath} onNavigateToChildren={handleNavigateToChildren} findTileById={(id) => findTileById(siteData.tiles, id)} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} highlightedTileId={highlightedTileId} onHighlightComplete={handleHighlightComplete} currentLanguage={builderLanguage} />
                 ) : (
                     <>
                         <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
@@ -756,7 +768,7 @@ const App: React.FC = () => {
                                 <p className="text-gray-600 text-center text-lg p-8 bg-white rounded-lg shadow-md col-span-full">No tiles at this level. Add one!</p>
                             ) : (
                                 tilesToDisplay.map((tile) => (
-                                    <TileDisplay key={tile.id} tile={tile} translations={siteData.translations} onEdit={handleEditTile} onDelete={handleDeleteTile} onAddChild={handleAddChildTile} onReorder={handleReorderTiles} parentId={currentPath.length > 0 ? currentPath[currentPath.length - 1] : null} onNavigateToChildren={handleNavigateToChildren} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} isBuilderMode={true} isSelectedParent={false} isHighlighted={tile.id === highlightedTileId} onHighlightComplete={handleHighlightComplete} />
+                                    <TileDisplay key={tile.id} tile={tile} translations={siteData.translations} onEdit={handleEditTile} onDelete={handleDeleteTile} onAddChild={handleAddChildTile} onReorder={handleReorderTiles} parentId={currentPath.length > 0 ? currentPath[currentPath.length - 1] : null} onNavigateToChildren={handleNavigateToChildren} onNavigateToTile={handleNavigateToTile} onPlayVideo={handlePlayVideo} isBuilderMode={true} isSelectedParent={false} isHighlighted={tile.id === highlightedTileId} onHighlightComplete={handleHighlightComplete} currentLanguage={builderLanguage} />
                                 ))
                             )}
                         </div>

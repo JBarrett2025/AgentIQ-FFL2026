@@ -12,9 +12,10 @@ interface SitePreviewerProps {
     onPlayVideo: (url: string) => void;
     highlightedTileId: string | null;
     onHighlightComplete: () => void;
+    currentLanguage?: 'en' | 'es';
 }
 
-const SitePreviewer: React.FC<SitePreviewerProps> = ({ siteData, currentPath, onNavigateToChildren, findTileById, onNavigateToTile, onPlayVideo, highlightedTileId, onHighlightComplete }) => {
+const SitePreviewer: React.FC<SitePreviewerProps> = ({ siteData, currentPath, onNavigateToChildren, findTileById, onNavigateToTile, onPlayVideo, highlightedTileId, onHighlightComplete, currentLanguage = 'en' }) => {
 
     const getTilesToDisplay = () => {
         if (currentPath.length === 0) {
@@ -56,6 +57,7 @@ const SitePreviewer: React.FC<SitePreviewerProps> = ({ siteData, currentPath, on
                         isSelectedParent={currentPath.length > 0 && currentPath[currentPath.length - 1] === tile.id}
                         isHighlighted={tile.id === highlightedTileId}
                         onHighlightComplete={onHighlightComplete}
+                        currentLanguage={currentLanguage}
                     />
                 ))
             )}
