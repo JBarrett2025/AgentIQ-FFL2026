@@ -106,8 +106,19 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
         return luminance > 160 ? '#333333' : '#FFFFFF';
     };
 
+    const getTranslation = (key: string | undefined): string => {
+        if (!key) return '';
+        const entry = translations[key];
+        if (!entry) return '';
+        const langValue = entry[currentLanguage];
+        if (langValue && langValue.trim() !== '') {
+            return langValue;
+        }
+        return entry.en || '';
+    };
+
     // Heuristic to identify simple, button-like tiles that should be square on mobile
-    const tileDescription = translations[tile.descriptionKey]?.en || '';
+    const tileDescription = getTranslation(tile.descriptionKey);
     const isSimpleButtonTile =
         tile.logoUrl &&
         !tile.useLogoAsBackground &&
@@ -284,13 +295,13 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                 >
                     {tile.isVisible.logo && tile.logoUrl && !tile.useLogoAsBackground && (
                         <div className="mb-4 text-center h-40 flex items-center justify-center">
-                            <img src={tile.logoUrl} alt={`${translations[tile.nameKey]?.en ?? ''} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            <img src={tile.logoUrl} alt={`${getTranslation(tile.nameKey)} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
                     <div className="flex justify-center items-center mb-2 gap-2">
                         {tile.isVisible.name && !useLogoBg && (
                             <h3 className="text-3xl font-semibold text-center" style={{ color: tile.isVisible.color ? dynamicTextColor : '#333333' }}>
-                                {translations[tile.nameKey]?.[currentLanguage] ?? translations[tile.nameKey]?.en ?? ''}
+                                {getTranslation(tile.nameKey)}
                             </h3>
                         )}
                         {isBuilderMode && tile.children && tile.children.length > 0 && (
@@ -304,7 +315,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                         )}
                     </div>
 
-                    {!useLogoBg && renderContent('description' as keyof Tile, translations[tile.descriptionKey]?.en || '')}
+                    {!useLogoBg && renderContent('description' as keyof Tile, getTranslation(tile.descriptionKey))}
                     {renderContent('overviewVideo', tile.overviewVideo)}
                     {renderContent('trainingVideos', tile.trainingVideos)}
                     {renderContent('documentation', tile.documentation)}
