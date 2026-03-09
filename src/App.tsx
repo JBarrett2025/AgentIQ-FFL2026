@@ -553,7 +553,14 @@ const App: React.FC = () => {
                                 if (keysToTranslate.length === 0) return;
 
                                 const BATCH_SIZE = 20;
+                                const DELAY_MS = 4000; // 4 second delay between batches (15 Requests Per Minute max for Gemini Free Tier)
+                                const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
                                 for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+                                    if (i > 0) {
+                                        await delay(DELAY_MS);
+                                    }
+
                                     const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
                                     const batchPayload: Record<string, string> = {};
                                     batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
@@ -627,7 +634,14 @@ const App: React.FC = () => {
         }
 
         const BATCH_SIZE = 20;
+        const DELAY_MS = 4000; // 4 second delay between batches
+        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
         for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+            if (i > 0) {
+                await delay(DELAY_MS);
+            }
+
             const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
             const batchPayload: Record<string, string> = {};
             batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
