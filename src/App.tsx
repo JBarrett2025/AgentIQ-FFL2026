@@ -452,7 +452,7 @@ const App: React.FC = () => {
                                     const { borderColor, ...restOfTile } = tile;
                                     const { borderColor: vBorderColor, ...restOfVisibility } = (tile.isVisible || {});
 
-                                    // MIGRATION SCRIPT: Fix 'default_tile_name' collisions from Phase 1 bug
+                                    // MIGRATION SCRIPT: Fix 'default_tile_name' collisions and orphans
                                     let safeNameKey = tile.nameKey || defaultTileProperties.nameKey;
                                     let safeDescKey = tile.descriptionKey || defaultTileProperties.descriptionKey;
 
@@ -460,15 +460,18 @@ const App: React.FC = () => {
                                         const uniqueSuffix = Date.now().toString() + Math.random().toString(36).substring(7);
                                         safeNameKey = `migrated_title_${uniqueSuffix}`;
                                         safeDescKey = `migrated_desc_${uniqueSuffix}`;
+                                    }
 
-                                        // Rescue string values if they existed in the imported dictionary at the old collided key
-                                        // Using ?? to ensure intentional empty strings "" are not overridden by falsy fallbacks
+                                    // SELF HEALING: If dict is somehow missing this key, rescue the legacy name/description or initialize it safely
+                                    if (!dict[safeNameKey]) {
                                         const oldName = importedData.translations?.[tile.nameKey]?.en ?? tile.name ?? '';
                                         const oldNameEs = importedData.translations?.[tile.nameKey]?.es ?? '';
+                                        dict[safeNameKey] = { en: oldName, es: oldNameEs };
+                                    }
+
+                                    if (!dict[safeDescKey]) {
                                         const oldDesc = importedData.translations?.[tile.descriptionKey]?.en ?? tile.description ?? '';
                                         const oldDescEs = importedData.translations?.[tile.descriptionKey]?.es ?? '';
-
-                                        dict[safeNameKey] = { en: oldName, es: oldNameEs };
                                         dict[safeDescKey] = { en: oldDesc, es: oldDescEs };
                                     }
 
@@ -586,6 +589,47 @@ const App: React.FC = () => {
         };
         reader.readAsText(file);
     }, [saveSiteData]);
+
+    const handleForceTranslationSweep = useCallback(async () => {
+        const dict = siteData.translations;
+        const entries = Object.entries(dict);
+        let hasUpdates = false;
+        const updatedDict = { ...dict };
+        let errorCount = 0;
+        let lastErrorMsg = '';
+
+        for (const [key, value] of entries) {
+            if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
+                try {
+                    const translatedText = await requestTranslation(value.en.trim(), 'es');
+                    if (translatedText) {
+                        updatedDict[key] = { ...value, es: translatedText };
+                        hasUpdates = true;
+                    }
+                } catch (err) {
+                    console.warn(`Translation sweep failed for string: "${value.en}"`, err);
+                    errorCount++;
+                    lastErrorMsg = (err as Error).message;
+                }
+            }
+        }
+
+        if (errorCount > 0) {
+            alert(`AI Translation Sweep skipped ${errorCount} entries due to API error.\n\nError: ${lastErrorMsg}`);
+        } else if (hasUpdates) {
+            alert('AI Translation Sweep finished successfully! Check your translations.');
+        } else {
+            alert('AI Translation Sweep found no missing translations.');
+        }
+
+        if (hasUpdates) {
+            setSiteData(prevSiteData => {
+                const finalSiteData = { ...prevSiteData, translations: updatedDict };
+                saveSiteData(finalSiteData);
+                return finalSiteData;
+            });
+        }
+    }, [siteData.translations, saveSiteData]);
 
     const handleSaveSiteAsJson = useCallback(() => {
         try {
@@ -738,6 +782,7 @@ const App: React.FC = () => {
                     <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600 font-semibold">Import JSON</button>
                     <input type="file" ref={fileInputRef} onChange={handleImportSiteFile} accept=".json" style={{ display: 'none' }} />
                     <button onClick={handleSaveSiteAsJson} className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 font-semibold">Save JSON</button>
+                    <button onClick={handleForceTranslationSweep} className="px-4 py-2 bg-emerald-500 text-white rounded-lg shadow hover:bg-emerald-600 font-semibold">Force AI Clean Up</button>
                     <button onClick={handleSaveSiteForDeployment} className="px-4 py-2 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 font-semibold">Deploy HTML</button>
                     <button onClick={handleSaveSiteAsComponent} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 font-semibold">Deploy Component</button>
                     <div className="flex items-center gap-2 border-l border-gray-300 pl-3 ml-3">
