@@ -4,10 +4,10 @@ let ai: GoogleGenAI | null = null;
 
 const getAiClient = () => {
     if (!ai) {
- if (!import.meta.env.VITE_GEMINI_API_KEY) {
+        if (!import.meta.env.VITE_GEMINI_API_KEY) {
             throw new Error("VITE_GEMINI_API_KEY environment variable not set");
         }
-       ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+        ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     }
     return ai;
 };
@@ -15,29 +15,36 @@ const getAiClient = () => {
 /**
  * Generates content using the Gemini API.
  * @param prompt The prompt to send to the model.
+ * @param config Optional configuration object to pass to the model, like responseMimeType
  * @returns The generated text, or an empty string if an error occurs.
  */
-export const generateContent = async (prompt: string): Promise<string> => {
+export const generateContent = async (prompt: string, config?: any): Promise<string> => {
     try {
         const genAI = getAiClient();
-        const response = await genAI.models.generateContent({
+        const requestPayload: any = {
             model: 'gemini-2.5-flash',
             contents: prompt,
-        });
-        
+        };
+
+        if (config) {
+            requestPayload.config = config;
+        }
+
+        const response = await genAI.models.generateContent(requestPayload);
+
         const text = response.text;
-        
+
         if (!text) {
             console.warn("Gemini API returned an empty response.");
             return "";
         }
-        
+
         return text.trim();
 
     } catch (error) {
         console.error("Error calling Gemini API:", error);
-        // Propagate a user-friendly error message
-        throw new Error("Failed to generate content. Please check your API key and network connection.");
+        // Throw the raw error so the upstream caller can see the actual HTTP code or message
+        throw error;
     }
 };
 
@@ -49,7 +56,7 @@ export const generateContent = async (prompt: string): Promise<string> => {
 export const findVideoWithAi = async (topic: string): Promise<{ videoUrl: string; thumbnailUrl: string } | null> => {
     try {
         const genAI = getAiClient();
-        
+
         const prompt = `Find a single, highly relevant YouTube video about "${topic}". Provide its full video URL and a high-quality thumbnail URL.`;
 
         const response = await genAI.models.generateContent({
@@ -109,18 +116,18 @@ export const generateImageWithAi = async (prompt: string): Promise<string | null
             model: 'imagen-4.0-generate-001',
             prompt: enhancedPrompt,
             config: {
-              numberOfImages: 1,
-              outputMimeType: 'image/png',
-              aspectRatio: '1:1',
+                numberOfImages: 1,
+                outputMimeType: 'image/png',
+                aspectRatio: '1:1',
             },
         });
 
         const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
-        
+
         if (base64ImageBytes) {
             return `data:image/png;base64,${base64ImageBytes}`;
         }
-        
+
         console.warn("AI image generation returned no images.");
         return null;
 
@@ -142,7 +149,7 @@ export const generateDesignSuggestionsWithAi = async (
 ): Promise<{ color: string; font: string } | null> => {
     try {
         const genAI = getAiClient();
-        
+
         const prompt = `Based on the topic "${topic}", suggest a single background color and a suitable font.
         - The color must be a single, valid hexadecimal color code (e.g., #1A2B3C).
         - The font must be one of the following options: ${availableFonts.join(', ')}.
