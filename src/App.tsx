@@ -15,7 +15,7 @@ import PromptModal from './components/PromptModal';
 import DOMPurify from 'dompurify';
 import VideoPlayer from './components/VideoPlayer';
 import { PreviousArrowIcon, HomeIcon } from './components/icons';
-import { requestTranslation } from './services/firebase';
+import { requestBatchTranslation } from './services/firebase';
 
 const LOCAL_STORAGE_KEY = 'nestedSiteBuilderData_v2';
 
@@ -542,19 +542,34 @@ const App: React.FC = () => {
                                 let errorCount = 0;
                                 let lastErrorMsg = '';
 
+                                const itemsToTranslate: Record<string, string> = {};
                                 for (const [key, value] of entries) {
                                     if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
-                                        try {
-                                            const translatedText = await requestTranslation(value.en.trim(), 'es');
-                                            if (translatedText) {
-                                                updatedDict[key] = { ...value, es: translatedText };
+                                        itemsToTranslate[key] = value.en.trim();
+                                    }
+                                }
+
+                                const keysToTranslate = Object.keys(itemsToTranslate);
+                                if (keysToTranslate.length === 0) return;
+
+                                const BATCH_SIZE = 20;
+                                for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+                                    const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
+                                    const batchPayload: Record<string, string> = {};
+                                    batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
+
+                                    try {
+                                        const translatedBatch = await requestBatchTranslation(batchPayload, 'es');
+                                        for (const [key, translatedText] of Object.entries(translatedBatch)) {
+                                            if (translatedText && updatedDict[key]) {
+                                                updatedDict[key] = { ...updatedDict[key], es: translatedText };
                                                 hasUpdates = true;
                                             }
-                                        } catch (err) {
-                                            console.warn(`Translation sweep failed for string: "${value.en}"`, err);
-                                            errorCount++;
-                                            lastErrorMsg = (err as Error).message;
                                         }
+                                    } catch (err) {
+                                        console.warn(`Translation batch failed`, err);
+                                        errorCount += batchKeys.length;
+                                        lastErrorMsg = (err as Error).message;
                                     }
                                 }
 
@@ -598,19 +613,37 @@ const App: React.FC = () => {
         let errorCount = 0;
         let lastErrorMsg = '';
 
+        const itemsToTranslate: Record<string, string> = {};
         for (const [key, value] of entries) {
             if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
-                try {
-                    const translatedText = await requestTranslation(value.en.trim(), 'es');
-                    if (translatedText) {
-                        updatedDict[key] = { ...value, es: translatedText };
+                itemsToTranslate[key] = value.en.trim();
+            }
+        }
+
+        const keysToTranslate = Object.keys(itemsToTranslate);
+        if (keysToTranslate.length === 0) {
+            alert('AI Translation Sweep found no missing translations.');
+            return;
+        }
+
+        const BATCH_SIZE = 20;
+        for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+            const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
+            const batchPayload: Record<string, string> = {};
+            batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
+
+            try {
+                const translatedBatch = await requestBatchTranslation(batchPayload, 'es');
+                for (const [key, translatedText] of Object.entries(translatedBatch)) {
+                    if (translatedText && updatedDict[key]) {
+                        updatedDict[key] = { ...updatedDict[key], es: translatedText };
                         hasUpdates = true;
                     }
-                } catch (err) {
-                    console.warn(`Translation sweep failed for string: "${value.en}"`, err);
-                    errorCount++;
-                    lastErrorMsg = (err as Error).message;
                 }
+            } catch (err) {
+                console.warn(`Translation batch failed`, err);
+                errorCount += batchKeys.length;
+                lastErrorMsg = (err as Error).message;
             }
         }
 
@@ -618,8 +651,6 @@ const App: React.FC = () => {
             alert(`AI Translation Sweep skipped ${errorCount} entries due to API error.\n\nError: ${lastErrorMsg}`);
         } else if (hasUpdates) {
             alert('AI Translation Sweep finished successfully! Check your translations.');
-        } else {
-            alert('AI Translation Sweep found no missing translations.');
         }
 
         if (hasUpdates) {

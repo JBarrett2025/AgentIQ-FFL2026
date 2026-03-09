@@ -29,3 +29,21 @@ export const requestTranslation = async (text: string, targetLanguageCode: strin
         throw new Error(`Translation failed: ${(error as Error).message}`);
     }
 };
+
+export const requestBatchTranslation = async (texts: Record<string, string>, targetLanguageCode: string = 'es'): Promise<Record<string, string>> => {
+    try {
+        const languageMap: Record<string, string> = { 'es': 'Spanish', 'en': 'English' };
+        const targetLanguage = languageMap[targetLanguageCode] || 'Spanish';
+
+        const prompt = `Translate the following JSON object's string values into ${targetLanguage}. Keep the exact same JSON keys. Return ONLY the translated JSON object, with no markdown formatting or commentary:\n\n${JSON.stringify(texts)}`;
+
+        const result = await generateContent(prompt);
+        if (!result) return {};
+
+        const cleanedResult = result.replace(/```(?:json)?\n?/gi, '').replace(/```\n?/g, '').trim();
+        return JSON.parse(cleanedResult);
+    } catch (error) {
+        console.error("Batch Translation Engine Error:", error);
+        throw new Error(`Batch translation failed: ${(error as Error).message}`);
+    }
+};
