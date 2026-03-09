@@ -475,12 +475,32 @@ const App: React.FC = () => {
                                         dict[safeDescKey] = { en: oldDesc, es: oldDescEs };
                                     }
 
+                                    const sanitizeLinkArray = (arr: any[] | undefined) => {
+                                        if (!Array.isArray(arr)) return [];
+                                        return arr.map(item => {
+                                            if (item.name && !item.nameKey) {
+                                                const uniqueLinkKey = `link_${Date.now().toString()}_${Math.random().toString(36).substring(7)}`;
+                                                dict[uniqueLinkKey] = { en: item.name, es: '' };
+                                                item.nameKey = uniqueLinkKey;
+                                                delete item.name; // Wipe legacy field
+                                            } else if (!item.nameKey) {
+                                                // Fallback if neither exists
+                                                item.nameKey = `link_${Date.now().toString()}_${Math.random().toString(36).substring(7)}`;
+                                                dict[item.nameKey] = { en: 'New Link', es: '' };
+                                            }
+                                            return item;
+                                        });
+                                    };
+
                                     const sanitizedTile: Tile = {
                                         ...defaultTileProperties,
                                         ...restOfTile,
                                         id: tile.id || generateUniqueId(),
                                         nameKey: safeNameKey,
                                         descriptionKey: safeDescKey,
+                                        links: sanitizeLinkArray(tile.links),
+                                        resources: sanitizeLinkArray(tile.resources),
+                                        internalLinks: sanitizeLinkArray(tile.internalLinks),
                                         children: tile.children ? sanitizeTiles(tile.children, dict) : [],
                                         accessTags: Array.isArray(tile.accessTags) ? tile.accessTags.map(String) : [],
                                         isVisible: {

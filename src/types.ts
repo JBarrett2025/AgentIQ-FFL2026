@@ -1,17 +1,22 @@
 
 export interface Link {
-  name: string;
+  name?: string; // Legacy field for migration logic
+  nameKey: string;
   url: string;
+  urlEs?: string;
 }
 
 export interface Resource {
-  name: string;
+  name?: string; // Legacy field for migration logic
+  nameKey: string;
   url: string;
+  urlEs?: string;
 }
 
 export interface InternalLink {
   id: string;
-  name: string;
+  name?: string; // Legacy field for migration logic
+  nameKey: string;
   targetTileId: string;
 }
 

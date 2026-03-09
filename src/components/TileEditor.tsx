@@ -26,6 +26,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
     const [nameEs, setNameEs] = useState(translations[tile.nameKey]?.es || '');
     const [descriptionEn, setDescriptionEn] = useState(translations[tile.descriptionKey]?.en || '');
     const [descriptionEs, setDescriptionEs] = useState(translations[tile.descriptionKey]?.es || '');
+    const [localTranslations, setLocalTranslations] = useState<TranslationDictionary>({});
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [currentLanguage, setCurrentLanguage] = useState<'en' | 'es'>('en');
     const [isSaving, setIsSaving] = useState(false);
@@ -100,6 +101,16 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
         }
     };
 
+    const handleTranslationChange = (key: string, lang: 'en' | 'es', value: string) => {
+        setLocalTranslations(prev => ({
+            ...prev,
+            [key]: {
+                ...(prev[key] || translations[key] || { en: '', es: '' }),
+                [lang]: value
+            }
+        }));
+    };
+
     const handleListChange = (listName: 'links' | 'resources' | 'trainingVideos' | 'internalLinks', index: number, field: string, value: string) => {
         const list = [...editedTile[listName]];
         (list[index] as any)[field] = value;
@@ -107,13 +118,22 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
     };
 
     const handleAddListItem = (listName: 'links' | 'resources' | 'trainingVideos') => {
-        const newItem = listName === 'trainingVideos' ? { url: '', thumbnailUrl: '' } : { name: '', url: '' };
-        setEditedTile(prev => ({ ...prev, [listName]: [...prev[listName], newItem] as any }));
+        if (listName === 'trainingVideos') {
+            setEditedTile(prev => ({ ...prev, trainingVideos: [...prev.trainingVideos, { url: '', thumbnailUrl: '' }] }));
+        } else {
+            const newKey = `link_${generateUniqueId()}`;
+            setLocalTranslations(prev => ({ ...prev, [newKey]: { en: '', es: '' } }));
+            setEditedTile(prev => ({ ...prev, [listName]: [...prev[listName], { nameKey: newKey, url: '', urlEs: '' }] as any }));
+        }
     };
 
     const handleAddInternalLink = (targetTile: Tile) => {
-        const linkName = targetTile.internalName || translations[targetTile.nameKey]?.en || 'Unnamed Tile';
-        const newLink: InternalLink = { name: linkName, targetTileId: targetTile.id, id: generateUniqueId() };
+        const linkNameEn = translations[targetTile.nameKey]?.en || 'Unnamed Tile';
+        const linkNameEs = translations[targetTile.nameKey]?.es || '';
+        const newKey = `intlink_${generateUniqueId()}`;
+        setLocalTranslations(prev => ({ ...prev, [newKey]: { en: linkNameEn, es: linkNameEs } }));
+
+        const newLink: InternalLink = { nameKey: newKey, targetTileId: targetTile.id, id: generateUniqueId() };
         setEditedTile(prev => ({ ...prev, internalLinks: [...(prev.internalLinks || []), newLink] }));
     };
 
@@ -146,7 +166,7 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
 
     const handleSave = async () => {
         setIsSaving(true);
-        const updatedTranslations = { ...translations };
+        const updatedTranslations = { ...translations, ...localTranslations };
 
         let finalNameEs = nameEs.trim();
         let finalDescriptionEs = descriptionEs.trim();
@@ -575,27 +595,34 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                             {[{ title: 'Links', name: 'links' }, { title: 'Resources', name: 'resources' }].map(list => (
                                 <div key={list.name} className="mb-4 p-4 bg-gray-50 rounded-md border">
                                     <h3 className="text-lg font-semibold mb-2">{list.title}</h3>
-                                    {editedTile[list.name as 'links' | 'resources'].map((item, index) => (
-                                        <div key={index} className="space-y-2 mb-3 p-2 border-b last:border-b-0 pb-3">
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input type="text" placeholder="Name" aria-label={`Name for ${list.title.slice(0, -1)} ${index + 1}`} value={item.name || ''} onChange={e => handleListChange(list.name as 'links' | 'resources', index, 'name', e.target.value)} className="w-full p-2 border rounded-md" />
-                                                <input type="url" placeholder="URL" aria-label={`URL for ${list.title.slice(0, -1)} ${index + 1}`} value={item.url || ''} onChange={e => handleListChange(list.name as 'links' | 'resources', index, 'url', e.target.value)} className="w-full p-2 border rounded-md" />
+                                    {editedTile[list.name as 'links' | 'resources'].map((item: any, index: number) => {
+                                        const titleVal = localTranslations[item.nameKey]?.[currentLanguage] ?? translations[item.nameKey]?.[currentLanguage] ?? '';
+                                        const urlVal = currentLanguage === 'es' ? (item.urlEs || '') : (item.url || '');
+                                        return (
+                                            <div key={index} className="space-y-2 mb-3 p-2 border-b last:border-b-0 pb-3">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input type="text" placeholder={`Name (${currentLanguage.toUpperCase()})`} aria-label={`Name for ${list.title.slice(0, -1)} ${index + 1}`} value={titleVal} onChange={e => handleTranslationChange(item.nameKey, currentLanguage, e.target.value)} className="w-full p-2 border rounded-md" />
+                                                    <input type="url" placeholder={`URL (${currentLanguage.toUpperCase()})`} aria-label={`URL for ${list.title.slice(0, -1)} ${index + 1}`} value={urlVal} onChange={e => handleListChange(list.name as 'links' | 'resources', index, currentLanguage === 'es' ? 'urlEs' : 'url', e.target.value)} className="w-full p-2 border rounded-md" />
+                                                </div>
+                                                <button onClick={() => handleRemoveListItem(list.name as 'links' | 'resources', index)} className="text-red-500 text-sm hover:underline">Remove</button>
                                             </div>
-                                            <button onClick={() => handleRemoveListItem(list.name as 'links' | 'resources', index)} className="text-red-500 text-sm hover:underline">Remove</button>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                     <button onClick={() => handleAddListItem(list.name as 'links' | 'resources')} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Add</button>
                                 </div>
                             ))}
                             {/* Internal Links */}
                             <div className="mb-4 p-4 bg-gray-50 rounded-md border">
                                 <h3 className="text-lg font-semibold mb-2">Internal Links</h3>
-                                {(editedTile.internalLinks || []).map((link, index) => (
-                                    <div key={index} className="flex items-center space-x-2 mb-2">
-                                        <input type="text" placeholder="Link Name" aria-label={`Name for internal link ${index + 1}`} value={link.name} onChange={e => handleListChange('internalLinks', index, 'name', e.target.value)} className="flex-grow p-2 border rounded-md" />
-                                        <button onClick={() => handleRemoveListItem('internalLinks', index)} className="text-red-500 text-sm hover:underline">Remove</button>
-                                    </div>
-                                ))}
+                                {(editedTile.internalLinks || []).map((link: any, index: number) => {
+                                    const titleVal = localTranslations[link.nameKey]?.[currentLanguage] ?? translations[link.nameKey]?.[currentLanguage] ?? '';
+                                    return (
+                                        <div key={index} className="flex items-center space-x-2 mb-2">
+                                            <input type="text" placeholder={`Link Name (${currentLanguage.toUpperCase()})`} aria-label={`Name for internal link ${index + 1}`} value={titleVal} onChange={e => handleTranslationChange(link.nameKey, currentLanguage, e.target.value)} className="flex-grow p-2 border rounded-md" />
+                                            <button onClick={() => handleRemoveListItem('internalLinks', index)} className="text-red-500 text-sm hover:underline">Remove</button>
+                                        </div>
+                                    )
+                                })}
                                 <button onClick={() => onShowTilePicker(handleAddInternalLink)} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">Add Internal Link</button>
                             </div>
                             {/* Workflow */}

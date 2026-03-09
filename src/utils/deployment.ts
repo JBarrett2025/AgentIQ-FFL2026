@@ -136,12 +136,33 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         if (isVisible.documentation && tile.documentation) { content.push(h('div', { key: 'docs', className: "mt-4 pt-2 border-t" }, h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, currentLanguage === 'es' ? "Documentación:" : "Documentation:"), h('a', { href: tile.documentation, target: "_blank", rel: "noopener noreferrer", className: "inline-block p-2 rounded-full bg-gray-100 hover:bg-gray-200" }, h(FolderIcon)))); }
         const renderLinks = (list: any, titleEn: string, titleEs: string, colorClass: string, key: string) => {
             if (isVisible[key] && list && list.length > 0) {
-                return h('div', { key: key, className: "mt-4 pt-2 border-t" }, h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, currentLanguage === 'es' ? titleEs : titleEn), h('div', { className: "flex flex-wrap gap-2" }, list.map((l: any, i: number) => h('a', { key: i, href: l.url, target: "_blank", rel: "noopener noreferrer", className: `px-3 py-1 ${colorClass} text-white rounded-md hover:opacity-90 text-lg shadow` }, l.name))));
+                return h('div', { key: key, className: "mt-4 pt-2 border-t" },
+                    h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, currentLanguage === 'es' ? titleEs : titleEn),
+                    h('div', { className: "flex flex-wrap gap-2" },
+                        list.map((l: any, i: number) => {
+                            const displayName = getTranslation(l.nameKey) || l.en || 'Link';
+                            const targetUrl = currentLanguage === 'es' && l.urlEs ? l.urlEs : l.url;
+                            return h('a', { key: i, href: targetUrl, target: "_blank", rel: "noopener noreferrer", className: `px-3 py-1 ${colorClass} text-white rounded-md hover:opacity-90 text-lg shadow` }, displayName);
+                        })
+                    )
+                );
             } return null;
         }
         content.push(renderLinks(tile.links, "Links:", "Enlaces:", "bg-blue-500", "links"));
         content.push(renderLinks(tile.resources, "Resources:", "Recursos:", "bg-green-500", "resources"));
-        if (isVisible.internalLinks && tile.internalLinks && tile.internalLinks.length > 0) { content.push(h('div', { key: "internal", className: "mt-4 pt-2 border-t" }, h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, currentLanguage === 'es' ? "Enlaces Internos:" : "Internal Links:"), h('div', { className: "flex flex-wrap gap-2" }, tile.internalLinks.map((l: any, i: number) => h('button', { key: i, onClick: (e: any) => { e.stopPropagation(); onNavigateToTile(l.targetTileId) }, className: "px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg shadow" }, l.name))))); }
+        if (isVisible.internalLinks && tile.internalLinks && tile.internalLinks.length > 0) {
+            content.push(
+                h('div', { key: "internal", className: "mt-4 pt-2 border-t" },
+                    h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, currentLanguage === 'es' ? "Enlaces Internos:" : "Internal Links:"),
+                    h('div', { className: "flex flex-wrap gap-2" },
+                        tile.internalLinks.map((l: any, i: number) => {
+                            const displayName = getTranslation(l.nameKey) || l.en || 'Internal Link';
+                            return h('button', { key: i, onClick: (e: any) => { e.stopPropagation(); onNavigateToTile(l.targetTileId) }, className: "px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg shadow" }, displayName);
+                        })
+                    )
+                )
+            );
+        }
 
         const heightAspectClass = useLogoBg ? 'aspect-square' : isSimpleButtonTile ? 'aspect-square sm:aspect-auto' : 'sm:min-h-[450px]';
         const tileClasses = `rounded-lg shadow-lg flex flex-col relative transition-transform duration-150 w-full cursor-pointer hover:scale-105 ${heightAspectClass} ${isSimpleButtonTile ? "" : "justify-between"} ${isAnimating ? "tile-highlight-pulse" : ""}`;

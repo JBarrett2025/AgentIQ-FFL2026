@@ -188,11 +188,15 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                     <div className="mt-4 pt-2 border-t border-gray-200">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>{currentLanguage === 'es' ? 'Enlaces:' : 'Links:'}</h4>
                         <div className="flex flex-wrap gap-2">
-                            {value.map((link: { name: string, url: string }, i: number) => (
-                                <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-lg text-center transition-colors shadow">
-                                    {link.name}
-                                </a>
-                            ))}
+                            {value.map((link: { nameKey: string, url: string, urlEs?: string }, i: number) => {
+                                const displayName = translations[link.nameKey]?.[currentLanguage] || translations[link.nameKey]?.en || 'Missing Title';
+                                const targetUrl = currentLanguage === 'es' && link.urlEs ? link.urlEs : link.url;
+                                return (
+                                    <a key={i} href={targetUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-lg text-center transition-colors shadow">
+                                        {displayName}
+                                    </a>
+                                )
+                            })}
                         </div>
                     </div>
                 );
@@ -201,11 +205,15 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                     <div className="mt-4 pt-2 border-t border-gray-200">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>{currentLanguage === 'es' ? 'Recursos:' : 'Resources:'}</h4>
                         <div className="flex flex-wrap gap-2">
-                            {value.map((resource: { name: string, url: string }, i: number) => (
-                                <a key={i} href={resource.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-lg text-center transition-colors shadow">
-                                    {resource.name}
-                                </a>
-                            ))}
+                            {value.map((resource: { nameKey: string, url: string, urlEs?: string }, i: number) => {
+                                const displayName = translations[resource.nameKey]?.[currentLanguage] || translations[resource.nameKey]?.en || 'Missing Title';
+                                const targetUrl = currentLanguage === 'es' && resource.urlEs ? resource.urlEs : resource.url;
+                                return (
+                                    <a key={i} href={targetUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 text-lg text-center transition-colors shadow">
+                                        {displayName}
+                                    </a>
+                                )
+                            })}
                         </div>
                     </div>
                 );
@@ -214,11 +222,14 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                     <div className="mt-4 pt-2 border-t border-gray-200">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>{currentLanguage === 'es' ? 'Enlaces Internos:' : 'Internal Links:'}</h4>
                         <div className="flex flex-wrap gap-2">
-                            {value.map((link: { name: string, targetTileId: string }, i: number) => (
-                                <button key={i} onClick={(e) => { e.stopPropagation(); onNavigateToTile(link.targetTileId); }} className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg text-center transition-colors shadow">
-                                    {link.name}
-                                </button>
-                            ))}
+                            {value.map((link: { nameKey: string, targetTileId: string }, i: number) => {
+                                const displayName = translations[link.nameKey]?.[currentLanguage] || translations[link.nameKey]?.en || 'Missing Title';
+                                return (
+                                    <button key={i} onClick={(e) => { e.stopPropagation(); onNavigateToTile(link.targetTileId); }} className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-lg text-center transition-colors shadow">
+                                        {displayName}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
                 );
