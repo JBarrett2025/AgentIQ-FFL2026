@@ -26,7 +26,9 @@ export interface Workflow {
 
 export interface TrainingVideo {
   url: string;
+  urlEs?: string;
   thumbnailUrl: string;
+  thumbnailUrlEs?: string;
 }
 
 export interface TileVisibility {
@@ -58,9 +60,12 @@ export interface TileProperties {
   color: string;
   font: string;
   logoUrl: string;
+  logoUrlEs?: string;
   useLogoAsBackground: boolean;
   overviewVideo: string;
+  overviewVideoEs?: string;
   thumbnailUrl: string;
+  thumbnailUrlEs?: string;
   trainingVideos: TrainingVideo[];
   documentation: string;
   links: Link[];

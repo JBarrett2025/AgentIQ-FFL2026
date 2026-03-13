@@ -82,27 +82,26 @@ const App: React.FC = () => {
                     });
                 };
 
-                const ensuredTemplates = (parsedData.templates || []).map((template: any) => {
-                    const { borderColor, ...restOfProps } = template.properties;
-                    const { borderColor: vBorderColor, ...restOfVisibility } = (template.properties.isVisible || {});
-                    return {
-                        ...template,
-                        properties: {
-                            ...restOfProps,
-                            isVisible: { ...defaultTileProperties.isVisible, ...restOfVisibility }
-                        }
-                    }
-                });
+                const loadedTranslations = parsedData.translations || defaultSiteProperties.translations;
+                const safeTiles = sanitizeTiles(parsedData.tiles || [], loadedTranslations, parsedData); // pass generic obj as mock importedData for edge cases
+                const safeTemplates = sanitizeTemplates(parsedData.templates || []);
 
                 setSiteData({
                     siteNameKey: parsedData.siteNameKey || defaultSiteProperties.siteNameKey,
                     headerContentKey: parsedData.headerContentKey || defaultSiteProperties.headerContentKey,
                     footerContentKey: parsedData.footerContentKey || defaultSiteProperties.footerContentKey,
-                    translations: parsedData.translations || defaultSiteProperties.translations,
-                    tiles: ensureVisibility(parsedData.tiles || []),
-                    templates: ensuredTemplates,
+                    translations: loadedTranslations,
+                    tiles: safeTiles,
+                    templates: safeTemplates,
                     helpTileId: parsedData.helpTileId
                 });
+
+                // Phase 18: Automatically sweep for missing translations in the background on load
+                // We run this asynchronously so it doesn't block the UI render
+                setTimeout(() => {
+                    sweepAndTranslateDictionary(loadedTranslations, true);
+                }, 1000);
+
             } else {
                 setSiteData(defaultSiteProperties);
             }
@@ -131,6 +130,154 @@ const App: React.FC = () => {
             return updatedSiteData;
         });
     }, [saveSiteData]);
+
+    const sanitizeTiles = (tiles: any[], dict: TranslationDictionary, fallbackSource?: any): Tile[] => {
+        return tiles.map(tile => {
+            const { borderColor, ...restOfTile } = tile;
+            const { borderColor: vBorderColor, ...restOfVisibility } = (tile.isVisible || {});
+
+            // MIGRATION SCRIPT: Fix 'default_tile_name' collisions and orphans
+            let safeNameKey = tile.nameKey || defaultTileProperties.nameKey;
+            let safeDescKey = tile.descriptionKey || defaultTileProperties.descriptionKey;
+
+            if (safeNameKey === 'default_tile_name' || safeDescKey === 'default_tile_description') {
+                const uniqueSuffix = Date.now().toString() + Math.random().toString(36).substring(7);
+                safeNameKey = `migrated_title_${uniqueSuffix}`;
+                safeDescKey = `migrated_desc_${uniqueSuffix}`;
+            }
+
+            // SELF HEALING: If dict is somehow missing this key, rescue the legacy name/description or initialize it safely
+            if (!dict[safeNameKey]) {
+                const oldName = fallbackSource?.translations?.[tile.nameKey]?.en ?? tile.name ?? '';
+                const oldNameEs = fallbackSource?.translations?.[tile.nameKey]?.es ?? '';
+                dict[safeNameKey] = { en: oldName, es: oldNameEs };
+            }
+
+            if (!dict[safeDescKey]) {
+                const oldDesc = fallbackSource?.translations?.[tile.descriptionKey]?.en ?? tile.description ?? '';
+                const oldDescEs = fallbackSource?.translations?.[tile.descriptionKey]?.es ?? '';
+                dict[safeDescKey] = { en: oldDesc, es: oldDescEs };
+            }
+
+            const sanitizeLinkArray = (arr: any[] | undefined) => {
+                if (!Array.isArray(arr)) return [];
+                return arr.map(item => {
+                    if (item.name && !item.nameKey) {
+                        const uniqueLinkKey = `link_${Date.now().toString()}_${Math.random().toString(36).substring(7)}`;
+                        dict[uniqueLinkKey] = { en: item.name, es: '' };
+                        item.nameKey = uniqueLinkKey;
+                        delete item.name; // Wipe legacy field
+                    } else if (!item.nameKey) {
+                        // Fallback if neither exists
+                        item.nameKey = `link_${Date.now().toString()}_${Math.random().toString(36).substring(7)}`;
+                        dict[item.nameKey] = { en: 'New Link', es: '' };
+                    }
+                    return item;
+                });
+            };
+
+            const sanitizedTile: Tile = {
+                ...defaultTileProperties,
+                ...restOfTile,
+                id: tile.id || generateUniqueId(),
+                nameKey: safeNameKey,
+                descriptionKey: safeDescKey,
+                links: sanitizeLinkArray(tile.links),
+                resources: sanitizeLinkArray(tile.resources),
+                internalLinks: sanitizeLinkArray(tile.internalLinks),
+                children: tile.children ? sanitizeTiles(tile.children, dict, fallbackSource) : [],
+                accessTags: Array.isArray(tile.accessTags) ? tile.accessTags.map(String) : [],
+                isVisible: {
+                    ...defaultTileProperties.isVisible,
+                    ...restOfVisibility
+                }
+            };
+            return sanitizedTile;
+        });
+    };
+
+    const sanitizeTemplates = (templates: any[] = []): Template[] => {
+        return templates.map((template: any) => {
+            const { borderColor, ...restOfProps } = template.properties;
+            const { borderColor: vBorderColor, ...restOfVisibility } = (template.properties?.isVisible || {});
+            return {
+                templateId: template.templateId || generateUniqueId(),
+                name: template.name || 'Untitled Template',
+                properties: {
+                    ...defaultTileProperties,
+                    ...(restOfProps || {}),
+                    accessTags: Array.isArray(template.properties?.accessTags) ? template.properties.accessTags.map(String) : [],
+                    isVisible: {
+                        ...defaultTileProperties.isVisible,
+                        ...restOfVisibility
+                    }
+                }
+            }
+        });
+    };
+
+    const sweepAndTranslateDictionary = async (dict: TranslationDictionary, silent: boolean = false) => {
+        const entries = Object.entries(dict);
+        let hasUpdates = false;
+        const updatedDict = { ...dict };
+        let errorCount = 0;
+        let lastErrorMsg = '';
+
+        const itemsToTranslate: Record<string, string> = {};
+        for (const [key, value] of entries) {
+            if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
+                itemsToTranslate[key] = value.en.trim();
+            }
+        }
+
+        const keysToTranslate = Object.keys(itemsToTranslate);
+        if (keysToTranslate.length === 0) {
+            if (!silent) alert('AI Translation Sweep found no missing translations.');
+            return;
+        }
+
+        const BATCH_SIZE = 20;
+        const DELAY_MS = 4000; // 4 second delay between batches (15 Requests Per Minute max for Gemini Free Tier)
+        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+        for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
+            if (i > 0) {
+                await delay(DELAY_MS);
+            }
+
+            const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
+            const batchPayload: Record<string, string> = {};
+            batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
+
+            try {
+                const translatedBatch = await requestBatchTranslation(batchPayload, 'es');
+                for (const [key, translatedText] of Object.entries(translatedBatch)) {
+                    if (translatedText && updatedDict[key]) {
+                        updatedDict[key] = { ...updatedDict[key], es: translatedText };
+                        hasUpdates = true;
+                    }
+                }
+            } catch (err) {
+                console.warn(`Translation batch failed`, err);
+                errorCount += batchKeys.length;
+                lastErrorMsg = (err as Error).message;
+            }
+        }
+
+        if (hasUpdates) {
+            updateAndSaveSiteData({ translations: updatedDict });
+            if (!silent) {
+                if (errorCount > 0) {
+                    alert(`Translation Sweep Partially Completed.\n\nSuccessfully updated some items, but ${errorCount} items failed due to API limitations or errors.\n\nLast Error: ${lastErrorMsg}\n\nPlease verify your VITE_GEMINI_API_KEY is valid. If you are using the free tier, wait 1 minute and click "Force AI Clean Up" again to resume migrating the remaining ${errorCount} elements.`);
+                } else {
+                    alert(`Translation Sweep Complete!\n\nSuccessfully requested missing Spanish translations for ${keysToTranslate.length} legacy data slots via the Gemini API.\n\nYour site's language toggles will now feature AI-generated translations.`);
+                }
+            }
+        } else if (errorCount > 0 && !silent) {
+            alert(`Translation Sweep Failed.\n\nAttempted to translate ${errorCount} items, but the Gemini API rejected the requests.\n\nError: ${lastErrorMsg}\n\nPlease check your developer console and VITE_GEMINI_API_KEY.`);
+        }
+    };
+
 
     const showConfirmation = (title: string, message: string, onConfirm: () => void, isDanger: boolean = false) => {
         setConfirmationState({
@@ -447,93 +594,9 @@ const App: React.FC = () => {
                         "Import Site Data",
                         "Importing this file will overwrite your current site data. Continue?",
                         () => {
-                            const sanitizeTiles = (tiles: any[], dict: TranslationDictionary): Tile[] => {
-                                return tiles.map(tile => {
-                                    const { borderColor, ...restOfTile } = tile;
-                                    const { borderColor: vBorderColor, ...restOfVisibility } = (tile.isVisible || {});
-
-                                    // MIGRATION SCRIPT: Fix 'default_tile_name' collisions and orphans
-                                    let safeNameKey = tile.nameKey || defaultTileProperties.nameKey;
-                                    let safeDescKey = tile.descriptionKey || defaultTileProperties.descriptionKey;
-
-                                    if (safeNameKey === 'default_tile_name' || safeDescKey === 'default_tile_description') {
-                                        const uniqueSuffix = Date.now().toString() + Math.random().toString(36).substring(7);
-                                        safeNameKey = `migrated_title_${uniqueSuffix}`;
-                                        safeDescKey = `migrated_desc_${uniqueSuffix}`;
-                                    }
-
-                                    // SELF HEALING: If dict is somehow missing this key, rescue the legacy name/description or initialize it safely
-                                    if (!dict[safeNameKey]) {
-                                        const oldName = importedData.translations?.[tile.nameKey]?.en ?? tile.name ?? '';
-                                        const oldNameEs = importedData.translations?.[tile.nameKey]?.es ?? '';
-                                        dict[safeNameKey] = { en: oldName, es: oldNameEs };
-                                    }
-
-                                    if (!dict[safeDescKey]) {
-                                        const oldDesc = importedData.translations?.[tile.descriptionKey]?.en ?? tile.description ?? '';
-                                        const oldDescEs = importedData.translations?.[tile.descriptionKey]?.es ?? '';
-                                        dict[safeDescKey] = { en: oldDesc, es: oldDescEs };
-                                    }
-
-                                    const sanitizeLinkArray = (arr: any[] | undefined) => {
-                                        if (!Array.isArray(arr)) return [];
-                                        return arr.map(item => {
-                                            if (item.name && !item.nameKey) {
-                                                const uniqueLinkKey = `link_${Date.now().toString()}_${Math.random().toString(36).substring(7)}`;
-                                                dict[uniqueLinkKey] = { en: item.name, es: '' };
-                                                item.nameKey = uniqueLinkKey;
-                                                delete item.name; // Wipe legacy field
-                                            } else if (!item.nameKey) {
-                                                // Fallback if neither exists
-                                                item.nameKey = `link_${Date.now().toString()}_${Math.random().toString(36).substring(7)}`;
-                                                dict[item.nameKey] = { en: 'New Link', es: '' };
-                                            }
-                                            return item;
-                                        });
-                                    };
-
-                                    const sanitizedTile: Tile = {
-                                        ...defaultTileProperties,
-                                        ...restOfTile,
-                                        id: tile.id || generateUniqueId(),
-                                        nameKey: safeNameKey,
-                                        descriptionKey: safeDescKey,
-                                        links: sanitizeLinkArray(tile.links),
-                                        resources: sanitizeLinkArray(tile.resources),
-                                        internalLinks: sanitizeLinkArray(tile.internalLinks),
-                                        children: tile.children ? sanitizeTiles(tile.children, dict) : [],
-                                        accessTags: Array.isArray(tile.accessTags) ? tile.accessTags.map(String) : [],
-                                        isVisible: {
-                                            ...defaultTileProperties.isVisible,
-                                            ...restOfVisibility
-                                        }
-                                    };
-                                    return sanitizedTile;
-                                });
-                            };
-
-                            const sanitizeTemplates = (templates: any[] = []): Template[] => {
-                                return templates.map((template: any) => {
-                                    const { borderColor, ...restOfProps } = template.properties;
-                                    const { borderColor: vBorderColor, ...restOfVisibility } = (template.properties?.isVisible || {});
-                                    return {
-                                        templateId: template.templateId || generateUniqueId(),
-                                        name: template.name || 'Untitled Template',
-                                        properties: {
-                                            ...defaultTileProperties,
-                                            ...(restOfProps || {}),
-                                            accessTags: Array.isArray(template.properties?.accessTags) ? template.properties.accessTags.map(String) : [],
-                                            isVisible: {
-                                                ...defaultTileProperties.isVisible,
-                                                ...restOfVisibility
-                                            }
-                                        }
-                                    }
-                                });
-                            };
-
                             const newTranslations: TranslationDictionary = { ...(importedData.translations || defaultSiteProperties.translations) };
-                            const safeTiles = sanitizeTiles(importedData.tiles || [], newTranslations);
+                            const safeTiles = sanitizeTiles(importedData.tiles || [], newTranslations, importedData);
+                            const safeTemplates = sanitizeTemplates(importedData.templates || []);
 
                             const newSiteData: SiteData = {
                                 siteNameKey: importedData.siteNameKey || defaultSiteProperties.siteNameKey,
@@ -541,7 +604,7 @@ const App: React.FC = () => {
                                 footerContentKey: importedData.footerContentKey || defaultSiteProperties.footerContentKey,
                                 translations: newTranslations,
                                 tiles: safeTiles,
-                                templates: sanitizeTemplates(importedData.templates || []),
+                                templates: safeTemplates,
                                 helpTileId: importedData.helpTileId,
                             };
 
@@ -554,67 +617,7 @@ const App: React.FC = () => {
                             setNavigationHistory([[]]);
                             setIsViewingPreview(false);
 
-                            // PHASE 6: Asynchronous Translation Sweep for Missing Spanish Legacy Data
-                            const sweepAndTranslateDictionary = async (dict: TranslationDictionary) => {
-                                const entries = Object.entries(dict);
-                                let hasUpdates = false;
-                                const updatedDict = { ...dict };
-                                let errorCount = 0;
-                                let lastErrorMsg = '';
-
-                                const itemsToTranslate: Record<string, string> = {};
-                                for (const [key, value] of entries) {
-                                    if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
-                                        itemsToTranslate[key] = value.en.trim();
-                                    }
-                                }
-
-                                const keysToTranslate = Object.keys(itemsToTranslate);
-                                if (keysToTranslate.length === 0) return;
-
-                                const BATCH_SIZE = 20;
-                                const DELAY_MS = 4000; // 4 second delay between batches (15 Requests Per Minute max for Gemini Free Tier)
-                                const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-                                for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
-                                    if (i > 0) {
-                                        await delay(DELAY_MS);
-                                    }
-
-                                    const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
-                                    const batchPayload: Record<string, string> = {};
-                                    batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
-
-                                    try {
-                                        const translatedBatch = await requestBatchTranslation(batchPayload, 'es');
-                                        for (const [key, translatedText] of Object.entries(translatedBatch)) {
-                                            if (translatedText && updatedDict[key]) {
-                                                updatedDict[key] = { ...updatedDict[key], es: translatedText };
-                                                hasUpdates = true;
-                                            }
-                                        }
-                                    } catch (err) {
-                                        console.warn(`Translation batch failed`, err);
-                                        errorCount += batchKeys.length;
-                                        lastErrorMsg = (err as Error).message;
-                                    }
-                                }
-
-                                if (errorCount > 0) {
-                                    console.error(`AI Translation Sweep failed on ${errorCount} items. Likely missing VITE_GEMINI_API_KEY.`);
-                                    alert(`AI Translation Sweep skipped ${errorCount} entries due to API error. Please ensure your VITE_GEMINI_API_KEY is configured in your .env file.\n\nError: ${lastErrorMsg}`);
-                                }
-
-                                // If translations occurred, push the updated dictionary into React State and LocalStorage
-                                if (hasUpdates) {
-                                    setSiteData(prevSiteData => {
-                                        const finalSiteData = { ...prevSiteData, translations: updatedDict };
-                                        saveSiteData(finalSiteData);
-                                        return finalSiteData;
-                                    });
-                                }
-                            };
-
+                            // Trigger translation sweep on import if needed
                             // Fire and forget: Runs in the background without locking up the UI
                             sweepAndTranslateDictionary(newTranslations);
                         },
@@ -633,68 +636,9 @@ const App: React.FC = () => {
     }, [saveSiteData]);
 
     const handleForceTranslationSweep = useCallback(async () => {
-        const dict = siteData.translations;
-        const entries = Object.entries(dict);
-        let hasUpdates = false;
-        const updatedDict = { ...dict };
-        let errorCount = 0;
-        let lastErrorMsg = '';
-
-        const itemsToTranslate: Record<string, string> = {};
-        for (const [key, value] of entries) {
-            if (value.en && value.en.trim() !== '' && (!value.es || value.es.trim() === '')) {
-                itemsToTranslate[key] = value.en.trim();
-            }
-        }
-
-        const keysToTranslate = Object.keys(itemsToTranslate);
-        if (keysToTranslate.length === 0) {
-            alert('AI Translation Sweep found no missing translations.');
-            return;
-        }
-
-        const BATCH_SIZE = 20;
-        const DELAY_MS = 4000; // 4 second delay between batches
-        const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-        for (let i = 0; i < keysToTranslate.length; i += BATCH_SIZE) {
-            if (i > 0) {
-                await delay(DELAY_MS);
-            }
-
-            const batchKeys = keysToTranslate.slice(i, i + BATCH_SIZE);
-            const batchPayload: Record<string, string> = {};
-            batchKeys.forEach(k => batchPayload[k] = itemsToTranslate[k]);
-
-            try {
-                const translatedBatch = await requestBatchTranslation(batchPayload, 'es');
-                for (const [key, translatedText] of Object.entries(translatedBatch)) {
-                    if (translatedText && updatedDict[key]) {
-                        updatedDict[key] = { ...updatedDict[key], es: translatedText };
-                        hasUpdates = true;
-                    }
-                }
-            } catch (err) {
-                console.warn(`Translation batch failed`, err);
-                errorCount += batchKeys.length;
-                lastErrorMsg = (err as Error).message;
-            }
-        }
-
-        if (errorCount > 0) {
-            alert(`AI Translation Sweep skipped ${errorCount} entries due to API error.\n\nError: ${lastErrorMsg}`);
-        } else if (hasUpdates) {
-            alert('AI Translation Sweep finished successfully! Check your translations.');
-        }
-
-        if (hasUpdates) {
-            setSiteData(prevSiteData => {
-                const finalSiteData = { ...prevSiteData, translations: updatedDict };
-                saveSiteData(finalSiteData);
-                return finalSiteData;
-            });
-        }
-    }, [siteData.translations, saveSiteData]);
+        // Redirect manual button press to the shared background utility function
+        await sweepAndTranslateDictionary(siteData.translations, false);
+    }, [siteData.translations, sweepAndTranslateDictionary]);
 
     const handleSaveSiteAsJson = useCallback(() => {
         try {

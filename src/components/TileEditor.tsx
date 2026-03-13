@@ -540,6 +540,8 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                                     </button>
                                 </div>
                                 <input type="url" id="tile-logo-url" name="logoUrl" value={editedTile.logoUrl || ''} onChange={handleChange} className="w-full p-2 border rounded-md mb-3" placeholder="https://example.com/logo.png" />
+                                <label htmlFor="tile-logo-url-es" className="block text-sm font-medium text-gray-600">Logo Image URL (ES) <span className="text-xs font-normal ml-1">- Optional Spanish Placeholder</span></label>
+                                <input type="url" id="tile-logo-url-es" name="logoUrlEs" value={editedTile.logoUrlEs || ''} onChange={handleChange} className="w-full p-2 border border-gray-200 bg-gray-50 rounded-md mb-3" placeholder="https://example.com/logo-es.png" />
 
                                 <div className="flex items-center justify-between mb-1">
                                     <label htmlFor="tile-overview-video" className="block text-sm font-medium">Overview Video URL</label>
@@ -548,9 +550,13 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                                     </button>
                                 </div>
                                 <input type="url" id="tile-overview-video" name="overviewVideo" value={editedTile.overviewVideo} onChange={handleChange} onBlur={(e) => handleVideoUrlBlur(e, 'overview')} className="w-full p-2 border rounded-md mb-3" />
+                                <label htmlFor="tile-overview-video-es" className="block text-sm font-medium text-gray-600">Overview Video URL (ES) <span className="text-xs font-normal ml-1">- Optional Spanish Placeholder</span></label>
+                                <input type="url" id="tile-overview-video-es" name="overviewVideoEs" value={editedTile.overviewVideoEs || ''} onChange={handleChange} onBlur={(e) => handleVideoUrlBlur(e, 'overview')} className="w-full p-2 border border-gray-200 bg-gray-50 rounded-md mb-3" />
 
                                 <label htmlFor="tile-thumbnail-url" className="block text-sm font-medium">Overview Thumbnail URL</label>
                                 <input type="url" id="tile-thumbnail-url" name="thumbnailUrl" value={editedTile.thumbnailUrl} onChange={handleChange} className="w-full p-2 border rounded-md mb-3" />
+                                <label htmlFor="tile-thumbnail-url-es" className="block text-sm font-medium text-gray-600">Overview Thumbnail URL (ES) <span className="text-xs font-normal ml-1">- Optional Spanish Placeholder</span></label>
+                                <input type="url" id="tile-thumbnail-url-es" name="thumbnailUrlEs" value={editedTile.thumbnailUrlEs || ''} onChange={handleChange} className="w-full p-2 border border-gray-200 bg-gray-50 rounded-md mb-3" />
                                 <label htmlFor="tile-documentation-url" className="block text-sm font-medium">Documentation Folder URL</label>
                                 <input type="url" id="tile-documentation-url" name="documentation" value={editedTile.documentation} onChange={handleChange} className="w-full p-2 border rounded-md" />
                             </div>
@@ -586,7 +592,25 @@ const TileEditor: React.FC<TileEditorProps> = ({ tile, translations, onClose, on
                                             onChange={e => handleListChange('trainingVideos', index, 'thumbnailUrl', e.target.value)}
                                             className="w-full p-2 border rounded-md"
                                         />
-                                        <button type="button" onClick={() => handleRemoveListItem('trainingVideos', index)} className="text-red-500 text-sm hover:underline">Remove</button>
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <input
+                                                type="url"
+                                                placeholder="Video URL (ES) - Optional"
+                                                aria-label={`Spanish URL for training video ${index + 1}`}
+                                                value={item.urlEs || ''}
+                                                onChange={e => handleListChange('trainingVideos', index, 'urlEs', e.target.value)}
+                                                className="w-full p-2 border border-gray-200 bg-gray-50 rounded-md"
+                                            />
+                                            <input
+                                                type="url"
+                                                placeholder="Thumbnail URL (ES) - Optional"
+                                                aria-label={`Spanish Thumbnail URL for training video ${index + 1}`}
+                                                value={item.thumbnailUrlEs || ''}
+                                                onChange={e => handleListChange('trainingVideos', index, 'thumbnailUrlEs', e.target.value)}
+                                                className="w-full p-2 border border-gray-200 bg-gray-50 rounded-md"
+                                            />
+                                        </div>
+                                        <button type="button" onClick={() => handleRemoveListItem('trainingVideos', index)} className="text-red-500 text-sm hover:underline mt-2">Remove</button>
                                     </div>
                                 ))}
                                 <button onClick={() => handleAddListItem('trainingVideos')} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Add</button>

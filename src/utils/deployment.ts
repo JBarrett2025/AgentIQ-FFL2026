@@ -112,24 +112,32 @@ const deployedAppLogic = (React: any, siteData: SiteData, defaultIsVisible: any)
         const getFontColor = (hex: string) => { if (!hex || hex.length < 7) return '#333'; try { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 160 ? '#333333' : '#FFFFFF'; } catch (e) { return '#333'; } };
         const textColor = getFontColor(tile.color);
         const labelColor = isVisible.color ? textColor : '#374151';
-        const useLogoBg = tile.useLogoAsBackground && tile.logoUrl;
+        const targetLogoUrl = currentLanguage === 'es' && tile.logoUrlEs ? tile.logoUrlEs : tile.logoUrl;
+        const useLogoBg = tile.useLogoAsBackground && targetLogoUrl;
 
         const tileStyle: any = { fontFamily: isVisible.font ? tile.font + ', sans-serif' : 'inherit', backgroundColor: isVisible.color ? tile.color : '#FFFFFF' };
-        if (useLogoBg) { Object.assign(tileStyle, { backgroundImage: `url('${tile.logoUrl}')`, backgroundSize: 'contain', backgroundPosition: 'center center', backgroundRepeat: 'no-repeat' }); }
+        if (useLogoBg) { Object.assign(tileStyle, { backgroundImage: `url('${targetLogoUrl}')`, backgroundSize: 'contain', backgroundPosition: 'center center', backgroundRepeat: 'no-repeat' }); }
         tileStyle.border = `6px solid ${isVisible.color ? darkenColor(tile.color, 15) : '#E5E7EB'}`;
 
         const mainClickAction = () => { _internalOnTileClick(tile); if (tile.children && tile.children.length > 0) onNavigateToChildren(tile.id); };
 
         const content: any[] = [];
-        if (isVisible.logo && tile.logoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: tile.logoUrl, alt: `${getTranslation(tile.nameKey)} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
+        if (isVisible.logo && targetLogoUrl && !useLogoBg) { content.push(h('div', { key: 'logo', className: "mb-4 h-24 flex items-center justify-center" }, h('img', { src: targetLogoUrl, alt: `${getTranslation(tile.nameKey)} Logo`, className: "max-h-24 mx-auto object-contain" }))); }
         if (isVisible.name && !useLogoBg) { content.push(h('h3', { key: 'name', className: "text-2xl font-semibold text-center", style: { color: isVisible.color ? textColor : '#333' } }, getTranslation(tile.nameKey))); }
         if (isVisible.description && tileDescription && !useLogoBg) { content.push(h('p', { key: 'desc', className: "text-md mt-2 text-center", style: { color: isVisible.color ? textColor : '#4B5563' } }, tileDescription)); }
-        if (isVisible.overviewVideo && tile.overviewVideo) { content.push(h('div', { key: 'overview', className: "mt-4 text-center" }, h('button', { onClick: (e: any) => { e.stopPropagation(); onPlayVideo(tile.overviewVideo) }, className: "inline-block relative group" }, h('img', { src: tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale", alt: "Overview", className: "rounded-md shadow-md" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-12 h-12 text-white" }))))); }
+
+        const targetOverviewVideo = currentLanguage === 'es' && tile.overviewVideoEs ? tile.overviewVideoEs : tile.overviewVideo;
+        const targetOverviewThumb = currentLanguage === 'es' && tile.thumbnailUrlEs ? tile.thumbnailUrlEs : tile.thumbnailUrl;
+        if (isVisible.overviewVideo && targetOverviewVideo) { content.push(h('div', { key: 'overview', className: "mt-4 text-center" }, h('button', { onClick: (e: any) => { e.stopPropagation(); onPlayVideo(targetOverviewVideo) }, className: "inline-block relative group" }, h('img', { src: targetOverviewThumb || "https://picsum.photos/120/80?grayscale", alt: "Overview", className: "rounded-md shadow-md" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-12 h-12 text-white" }))))); }
         if (isVisible.trainingVideos && tile.trainingVideos && tile.trainingVideos.length > 0) {
             content.push(h('div', { key: 'training', className: "mt-4" },
                 h('h4', { className: "font-semibold text-lg mb-2 text-left", style: { color: labelColor } }, currentLanguage === 'es' ? "Videos de Entrenamiento:" : "Training Videos:"),
                 h('div', { className: "grid grid-cols-2 sm:grid-cols-3 gap-2" },
-                    tile.trainingVideos.map((v: any, i: number) => h('button', { key: i, onClick: (e: any) => { e.stopPropagation(); onPlayVideo(v.url) }, className: "inline-block relative group" }, h('img', { src: v.thumbnailUrl || `https://picsum.photos/100/60?grayscale&random=${i}`, alt: `Training ${i + 1}`, className: "rounded-md shadow-sm w-full" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-8 h-8 text-white" }))))
+                    tile.trainingVideos.map((v: any, i: number) => {
+                        const targetVidUrl = currentLanguage === 'es' && v.urlEs ? v.urlEs : v.url;
+                        const targetThumbUrl = currentLanguage === 'es' && v.thumbnailUrlEs ? v.thumbnailUrlEs : v.thumbnailUrl;
+                        return h('button', { key: i, onClick: (e: any) => { e.stopPropagation(); onPlayVideo(targetVidUrl) }, className: "inline-block relative group" }, h('img', { src: targetThumbUrl || `https://picsum.photos/100/60?grayscale&random=${i}`, alt: `Training ${i + 1}`, className: "rounded-md shadow-sm w-full" }), h('div', { className: "absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" }, h(PlayIcon, { className: "w-8 h-8 text-white" })))
+                    })
                 )
             ));
         }

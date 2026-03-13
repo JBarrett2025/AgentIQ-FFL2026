@@ -147,30 +147,37 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
         switch (key) {
             case 'description':
                 return <p className="text-lg mt-2 text-center" style={{ color: tile.isVisible.color ? dynamicTextColor : '#4B5563' }}>{value}</p>;
-            case 'overviewVideo':
-                return value && (
+            case 'overviewVideo': {
+                const targetOverviewVideo = currentLanguage === 'es' && tile.overviewVideoEs ? tile.overviewVideoEs : value;
+                const targetOverviewThumb = currentLanguage === 'es' && tile.thumbnailUrlEs ? tile.thumbnailUrlEs : tile.thumbnailUrl;
+                return targetOverviewVideo && (
                     <div className="mt-4 text-center">
-                        <button onClick={(e) => { e.stopPropagation(); onPlayVideo(value); }} className="inline-block relative group" aria-label="Play overview video">
-                            <img src={tile.thumbnailUrl || "https://picsum.photos/120/80?grayscale"} alt="Overview Video Thumbnail" className="rounded-md shadow-md group-hover:shadow-lg transition-shadow" />
+                        <button onClick={(e) => { e.stopPropagation(); onPlayVideo(targetOverviewVideo); }} className="inline-block relative group" aria-label="Play overview video">
+                            <img src={targetOverviewThumb || "https://picsum.photos/120/80?grayscale"} alt="Overview Video Thumbnail" className="rounded-md shadow-md group-hover:shadow-lg transition-shadow" />
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"></path></svg>
                             </div>
                         </button>
                     </div>
                 );
+            }
             case 'trainingVideos':
                 return value && value.length > 0 && (
                     <div className="mt-4">
                         <h4 className="font-semibold text-lg mb-2 text-left" style={{ color: labelColor }}>{currentLanguage === 'es' ? 'Videos de Entrenamiento:' : 'Training Videos:'}</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {value.map((video: { url: string, thumbnailUrl: string }, i: number) => (
-                                <button key={i} onClick={(e) => { e.stopPropagation(); onPlayVideo(video.url); }} className="inline-block text-center relative group" aria-label={`Play training video ${i + 1}`}>
-                                    <img src={video.thumbnailUrl || `https://picsum.photos/100/60?grayscale&random=${i}`} alt={`Training Video Thumbnail ${i + 1}`} className="rounded-md shadow-sm group-hover:shadow-md transition-shadow w-full" />
-                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"></path></svg>
-                                    </div>
-                                </button>
-                            ))}
+                            {value.map((video: { url: string, urlEs?: string, thumbnailUrl: string, thumbnailUrlEs?: string }, i: number) => {
+                                const targetVidUrl = currentLanguage === 'es' && video.urlEs ? video.urlEs : video.url;
+                                const targetThumbUrl = currentLanguage === 'es' && video.thumbnailUrlEs ? video.thumbnailUrlEs : video.thumbnailUrl;
+                                return (
+                                    <button key={i} onClick={(e) => { e.stopPropagation(); onPlayVideo(targetVidUrl); }} className="inline-block text-center relative group" aria-label={`Play training video ${i + 1}`}>
+                                        <img src={targetThumbUrl || `https://picsum.photos/100/60?grayscale&random=${i}`} alt={`Training Video Thumbnail ${i + 1}`} className="rounded-md shadow-sm group-hover:shadow-md transition-shadow w-full" />
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"></path></svg>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 );
@@ -238,7 +245,8 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
         }
     };
 
-    const useLogoBg = tile.useLogoAsBackground && tile.logoUrl;
+    const targetLogoUrl = currentLanguage === 'es' && tile.logoUrlEs ? tile.logoUrlEs : tile.logoUrl;
+    const useLogoBg = tile.useLogoAsBackground && targetLogoUrl;
 
     const tileStyle: React.CSSProperties = {
         fontFamily: tile.isVisible.font ? (tile.font + ', sans-serif') : 'inherit',
@@ -246,7 +254,7 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
     };
 
     if (useLogoBg) {
-        tileStyle.backgroundImage = `url('${tile.logoUrl}')`;
+        tileStyle.backgroundImage = `url('${targetLogoUrl}')`;
         tileStyle.backgroundSize = 'contain';
         tileStyle.backgroundPosition = 'center center';
         tileStyle.backgroundRepeat = 'no-repeat';
@@ -304,9 +312,9 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, translations, onEdit, o
                     className={`flex-grow ${isSimpleButtonTile ? 'flex flex-col items-center justify-center text-center' : ''}`}
                     onClick={() => { if (tile.children && tile.children.length > 0) onNavigateToChildren(tile.id); }}
                 >
-                    {tile.isVisible.logo && tile.logoUrl && !tile.useLogoAsBackground && (
+                    {tile.isVisible.logo && targetLogoUrl && !tile.useLogoAsBackground && (
                         <div className="mb-4 text-center h-40 flex items-center justify-center">
-                            <img src={tile.logoUrl} alt={`${getTranslation(tile.nameKey)} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            <img src={targetLogoUrl} alt={`${getTranslation(tile.nameKey)} Logo`} className="max-h-40 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
                     )}
                     <div className="flex justify-center items-center mb-2 gap-2">
