@@ -16,6 +16,10 @@ import DOMPurify from 'dompurify';
 import VideoPlayer from './components/VideoPlayer';
 import { PreviousArrowIcon, HomeIcon } from './components/icons';
 import { requestBatchTranslation } from './services/firebase';
+import { useParams, useNavigate } from 'react-router-dom';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from './services/firebase';
+import { useAuth } from './contexts/AuthContext';
 
 const LOCAL_STORAGE_KEY = 'nestedSiteBuilderData_v2';
 
@@ -31,6 +35,9 @@ const sanitizeHTML = (dirty: string): string => {
 
 
 const App: React.FC = () => {
+    const { projectId } = useParams<{ projectId?: string }>();
+    const navigate = useNavigate();
+    
     const [siteData, setSiteData] = useState<SiteData>(defaultSiteProperties);
     const [editingTile, setEditingTile] = useState<Tile | null>(null);
     const [isEditingSiteDetails, setIsEditingSiteDetails] = useState(false);
@@ -65,63 +72,104 @@ const App: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        try {
-            const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (storedData) {
-                const parsedData = JSON.parse(storedData);
-
-                const ensureVisibility = (tiles: any[]): Tile[] => {
-                    return tiles.map(tile => {
-                        const { borderColor, ...restOfTile } = tile;
-                        const { borderColor: vBorderColor, ...restOfVisibility } = (tile.isVisible || {});
-                        return {
-                            ...restOfTile,
-                            isVisible: { ...defaultTileProperties.isVisible, ...restOfVisibility },
-                            children: tile.children ? ensureVisibility(tile.children) : []
-                        };
-                    });
-                };
-
-                const loadedTranslations = parsedData.translations || defaultSiteProperties.translations;
-                const safeTiles = sanitizeTiles(parsedData.tiles || [], loadedTranslations, parsedData); // pass generic obj as mock importedData for edge cases
-                const safeTemplates = sanitizeTemplates(parsedData.templates || []);
-
-                setSiteData({
-                    siteNameKey: parsedData.siteNameKey || defaultSiteProperties.siteNameKey,
-                    headerContentKey: parsedData.headerContentKey || defaultSiteProperties.headerContentKey,
-                    footerContentKey: parsedData.footerContentKey || defaultSiteProperties.footerContentKey,
-                    translations: loadedTranslations,
-                    tiles: safeTiles,
-                    templates: safeTemplates,
-                    helpTileId: parsedData.helpTileId
+        const processImportedData = (parsedData: any) => {
+            const ensureVisibility = (tiles: any[]): Tile[] => {
+                return tiles.map(tile => {
+                    const { borderColor, ...restOfTile } = tile;
+                    const { borderColor: vBorderColor, ...restOfVisibility } = (tile.isVisible || {});
+                    return {
+                        ...restOfTile,
+                        isVisible: { ...defaultTileProperties.isVisible, ...restOfVisibility },
+                        children: tile.children ? ensureVisibility(tile.children) : []
+                    };
                 });
+            };
 
-                // Phase 18: Automatically sweep for missing translations in the background on load
-                // We run this asynchronously so it doesn't block the UI render
-                setTimeout(() => {
-                    sweepAndTranslateDictionary(loadedTranslations, true);
-                }, 1000);
+            const loadedTranslations = parsedData.translations || defaultSiteProperties.translations;
+            const safeTiles = sanitizeTiles(parsedData.tiles || [], loadedTranslations, parsedData);
+            const safeTemplates = sanitizeTemplates(parsedData.templates || []);
 
-            } else {
+            setSiteData({
+                siteNameKey: parsedData.siteNameKey || defaultSiteProperties.siteNameKey,
+                headerContentKey: parsedData.headerContentKey || defaultSiteProperties.headerContentKey,
+                footerContentKey: parsedData.footerContentKey || defaultSiteProperties.footerContentKey,
+                translations: loadedTranslations,
+                tiles: safeTiles,
+                templates: safeTemplates,
+                helpTileId: parsedData.helpTileId
+            });
+
+            setTimeout(() => {
+                sweepAndTranslateDictionary(loadedTranslations, true);
+            }, 1000);
+        };
+
+        const loadLocalData = () => {
+            try {
+                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (storedData) {
+                    processImportedData(JSON.parse(storedData));
+                } else {
+                    setSiteData(defaultSiteProperties);
+                }
+            } catch (e) {
+                console.error("Error loading data from localStorage:", e);
+                setError("Failed to load saved data. Data might be corrupted.");
                 setSiteData(defaultSiteProperties);
+            } finally {
+                setLoading(false);
             }
-        } catch (e) {
-            console.error("Error loading data from localStorage:", e);
-            setError("Failed to load saved data. Data might be corrupted.");
-            setSiteData(defaultSiteProperties);
-        } finally {
-            setLoading(false);
+        };
+
+        const loadCloudData = async () => {
+            if (!projectId) return;
+            try {
+                const docRef = doc(db, 'projects', projectId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().siteData) {
+                    processImportedData(docSnap.data().siteData);
+                } else {
+                    // Blank or new cloud project
+                    setSiteData(defaultSiteProperties);
+                }
+            } catch (e) {
+                console.error("Error loading cloud data:", e);
+                setError("Failed to load cloud project. Ensure you have permissions.");
+                setSiteData(defaultSiteProperties);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (projectId) {
+            loadCloudData();
+        } else {
+            loadLocalData();
         }
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId]);
 
     const saveSiteData = useCallback((dataToSave: SiteData) => {
-        try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-        } catch (e) {
-            console.error("Error saving data to localStorage:", e);
-            setError("Failed to save data. Local storage might be full or inaccessible.");
+        if (projectId) {
+            try {
+                updateDoc(doc(db, 'projects', projectId), {
+                    siteData: dataToSave,
+                    updatedAt: new Date()
+                }).catch(e => {
+                    console.error("Error saving to Firestore asynchronously", e);
+                });
+            } catch (e) {
+                console.error("Error triggering cloud save:", e);
+            }
+        } else {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+            } catch (e) {
+                console.error("Error saving data to localStorage:", e);
+                setError("Failed to save data. Local storage might be full or inaccessible.");
+            }
         }
-    }, []);
+    }, [projectId]);
 
     const updateAndSaveSiteData = useCallback((newData: Partial<SiteData>) => {
         setSiteData(prevSiteData => {
@@ -766,6 +814,9 @@ const App: React.FC = () => {
             <header className="bg-white shadow-md py-4 md:py-6 mb-10">
                 <div className="container mx-auto px-4 sm:px-6 grid grid-cols-3 items-center gap-4">
                     <div className="flex items-center space-x-2 justify-self-start">
+                        <button onClick={() => navigate('/dashboard')} className="text-slate-600 hover:text-slate-800 transition-colors flex items-center text-sm px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-md shadow-sm border border-slate-200" aria-label="Go to Dashboard">
+                            ← Dashboard
+                        </button>
                         {navigationHistory.length > 1 && (
                             <button onClick={handleGoToPrevious} className="text-blue-600 hover:text-blue-800 transition-colors flex items-center text-lg p-2 bg-gray-100 hover:bg-gray-200 rounded-md shadow hover:shadow-md" aria-label="Go to Previous">
                                 <PreviousArrowIcon /><span className="ml-2 hidden sm:inline">Previous</span>
