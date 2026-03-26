@@ -5,13 +5,13 @@ import { generateContent } from "../utils/aiUtils";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    // Replace with actual config later when deploying the DB
-    apiKey: "AIzaSyDummyKeyForLocalDev_CHANGE_ME",
-    authDomain: "nextgen-nested-site-builder.firebaseapp.com",
-    projectId: "nextgen-nested-site-builder",
-    storageBucket: "nextgen-nested-site-builder.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcd1234567890",
+  apiKey: "AIzaSyBhGjj8yaTMHZPoc4aCJNjYtadYpz0DpqI",
+  authDomain: "agentiq-webapp-a57fc.firebaseapp.com",
+  projectId: "agentiq-webapp-a57fc",
+  storageBucket: "agentiq-webapp-a57fc.firebasestorage.app",
+  messagingSenderId: "212660200166",
+  appId: "1:212660200166:web:5bf99c8cdc557864061127",
+  measurementId: "G-7EC9HRNCTN"
 };
 
 // Initialize Firebase
