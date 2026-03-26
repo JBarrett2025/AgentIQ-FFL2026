@@ -1,7 +1,7 @@
 import './index.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import MainRouter from './MainRouter';
 import ErrorBoundary from './components/ErrorBoundary';
 
 /**
@@ -58,7 +58,7 @@ const initializeApp = () => {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <App />
+        <MainRouter />
       </ErrorBoundary>
     </React.StrictMode>
   );
