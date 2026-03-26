@@ -1,4 +1,6 @@
 import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import { generateContent } from "../utils/aiUtils";
 
 // Your web app's Firebase configuration
@@ -13,7 +15,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase services
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 export const requestTranslation = async (text: string, targetLanguageCode: string = 'es'): Promise<string> => {
     try {
