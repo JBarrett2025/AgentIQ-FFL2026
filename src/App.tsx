@@ -17,9 +17,9 @@ import VideoPlayer from './components/VideoPlayer';
 import { PreviousArrowIcon, HomeIcon } from './components/icons';
 import { requestBatchTranslation } from './services/firebase';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './services/firebase';
-import { useAuth } from './contexts/AuthContext';
+
 
 const LOCAL_STORAGE_KEY = 'nestedSiteBuilderData_v2';
 
@@ -121,22 +121,31 @@ const App: React.FC = () => {
             }
         };
 
-        const loadCloudData = async () => {
+        let unsubscribe: (() => void) | undefined;
+
+        const loadCloudData = () => {
             if (!projectId) return;
             try {
                 const docRef = doc(db, 'projects', projectId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists() && docSnap.data().siteData) {
-                    processImportedData(docSnap.data().siteData);
-                } else {
-                    // Blank or new cloud project
-                    setSiteData(defaultSiteProperties);
-                }
+                unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists() && docSnap.data().siteData) {
+                        // Ignore the update if it came from our own local save to avoid jarring the UI
+                        if (!docSnap.metadata.hasPendingWrites) {
+                            processImportedData(docSnap.data().siteData);
+                        }
+                    } else {
+                        // Blank or new cloud project
+                        setSiteData(defaultSiteProperties);
+                    }
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error in cloud listener:", error);
+                    setError("Failed to listen to cloud project.");
+                    setLoading(false);
+                });
             } catch (e) {
-                console.error("Error loading cloud data:", e);
-                setError("Failed to load cloud project. Ensure you have permissions.");
-                setSiteData(defaultSiteProperties);
-            } finally {
+                console.error("Error setting up cloud listener:", e);
+                setError("Failed to setup cloud project listener.");
                 setLoading(false);
             }
         };
@@ -146,6 +155,12 @@ const App: React.FC = () => {
         } else {
             loadLocalData();
         }
+
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
