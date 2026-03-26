@@ -96,3 +96,13 @@ export interface SiteData {
   templates: Template[];
   helpTileId?: string;
 }
+
+export interface ProjectDocument {
+  id?: string;
+  projectName: string;
+  ownerId: string;
+  collaboratorIds: string[];
+  siteData: SiteData | null;
+  createdAt: any;
+  updatedAt: any;
+}
