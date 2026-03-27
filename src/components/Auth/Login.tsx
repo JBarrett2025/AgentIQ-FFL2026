@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -59,7 +59,6 @@ export default function Login() {
                     >
                         {loading ? 'Logging in...' : 'Log In'}
                     </button>
-                </form>
                 </form>
             </div>
         </div>
