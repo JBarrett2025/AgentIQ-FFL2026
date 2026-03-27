@@ -1,5 +1,4 @@
-
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
 import Login from './components/Auth/Login';
@@ -10,10 +9,13 @@ export default function MainRouter() {
         <AuthProvider>
             <BrowserRouter>
                 <Routes>
-                    {/* Preserve the existing localized Editor on the root route */}
-                    <Route path="/" element={<App />} />
+                    {/* Redirect root to login by default */}
+                    <Route path="/" element={<Navigate to="/login" replace />} />
                     
-                    {/* New Web App Routes */}
+                    {/* Preserve the existing localized Editor */}
+                    <Route path="/editor/local" element={<App />} />
+                    
+                    {/* Web App Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/editor/cloud/:projectId" element={<App />} />
