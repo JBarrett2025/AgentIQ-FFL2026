@@ -167,8 +167,13 @@ const App: React.FC = () => {
     const saveSiteData = useCallback((dataToSave: SiteData) => {
         if (projectId) {
             try {
+                // Firestore strictly throws errors if an object contains `undefined` values. 
+                // LocalStorage didn't care because JSON.stringify strips them automatically.
+                // We run a fast JSON strip here before handing it off to the Google SDK.
+                const sanitizedData = JSON.parse(JSON.stringify(dataToSave));
+                
                 updateDoc(doc(db, 'projects', projectId), {
-                    siteData: dataToSave,
+                    siteData: sanitizedData,
                     updatedAt: new Date()
                 }).catch(e => {
                     console.error("Error saving to Firestore asynchronously", e);
