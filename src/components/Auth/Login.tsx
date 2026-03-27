@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +22,19 @@ export default function Login() {
             setError(err.message || 'Failed to log in');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!email) {
+            setError("Please enter your email address first, then click 'Forgot Password'.");
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert("Password reset email sent! Please check your inbox and follow the secure link.");
+        } catch (err: any) {
+            setError(err.message || 'Failed to send password reset email');
         }
     };
 
@@ -59,6 +72,11 @@ export default function Login() {
                     >
                         {loading ? 'Logging in...' : 'Log In'}
                     </button>
+                    <div className="text-center pt-2">
+                        <button type="button" onClick={handleResetPassword} className="text-sm text-blue-600 hover:underline cursor-pointer">
+                            Forgot your password?
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
