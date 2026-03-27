@@ -102,6 +102,7 @@ export interface ProjectDocument {
   projectName: string;
   ownerId: string;
   collaboratorIds: string[];
+  collaboratorEmails: string[];
   siteData: SiteData | null;
   createdAt: any;
   updatedAt: any;

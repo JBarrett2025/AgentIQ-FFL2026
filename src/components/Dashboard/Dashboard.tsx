@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import PromptModal from '../PromptModal';
 
 export default function Dashboard() {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [promptState, setPromptState] = useState<{ isOpen: boolean; title: string; label: string; onConfirm: (v: string) => void } | null>(null);
 
     useEffect(() => {
         if (!user) {
@@ -19,15 +21,20 @@ export default function Dashboard() {
         const fetchProjects = async () => {
             try {
                 // Fetch projects owned by this user
-                const q = query(collection(db, 'projects'), where('ownerId', '==', user.uid));
-                const querySnapshot = await getDocs(q);
+                const qOwned = query(collection(db, 'projects'), where('ownerId', '==', user.uid));
+                const qShared = query(collection(db, 'projects'), where('collaboratorEmails', 'array-contains', user.email?.toLowerCase().trim() || ''));
                 
-                const userProjects = querySnapshot.docs.map(doc => ({
+                const [ownedSnap, sharedSnap] = await Promise.all([getDocs(qOwned), getDocs(qShared)]);
+                
+                const userProjects = [...ownedSnap.docs, ...sharedSnap.docs].map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
                 
-                setProjects(userProjects);
+                // Deduplicate
+                const uniqueProjects = Array.from(new Map(userProjects.map(p => [p.id, p])).values());
+                
+                setProjects(uniqueProjects);
             } catch (err) {
                 console.error("Error fetching projects", err);
             } finally {
@@ -45,6 +52,7 @@ export default function Dashboard() {
                 projectName: 'New Cloud Project',
                 ownerId: user.uid,
                 collaboratorIds: [],
+                collaboratorEmails: [],
                 siteData: null, // Will be seeded later when opened in editor
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -54,6 +62,27 @@ export default function Dashboard() {
             console.error("Error creating project", err);
             alert("Failed to create cloud project.");
         }
+    };
+
+    const handleShareProject = (projectId: string) => {
+        setPromptState({
+            isOpen: true,
+            title: 'Share Project',
+            label: 'Collaborator Email Address:',
+            onConfirm: async (email) => {
+                if (!email) return;
+                try {
+                    const docRef = doc(db, 'projects', projectId);
+                    await updateDoc(docRef, {
+                        collaboratorEmails: arrayUnion(email.toLowerCase().trim())
+                    });
+                    alert(`Successfully shared with ${email}!`);
+                } catch (e) {
+                    console.error("Error sharing project", e);
+                    alert("Failed to share project.");
+                }
+            }
+        });
     };
 
     return (
@@ -106,14 +135,24 @@ export default function Dashboard() {
                     ) : (
                         <ul className="space-y-3 mb-6 max-h-60 overflow-y-auto">
                             {projects.map(p => (
-                                <li key={p.id} className="border border-slate-200 rounded hover:border-blue-400 transition-colors">
+                                <li key={p.id} className="border border-slate-200 rounded hover:border-blue-400 transition-colors flex justify-between items-center group">
                                     <button 
                                         onClick={() => navigate(`/editor/cloud/${p.id}`)}
-                                        className="w-full text-left px-4 py-3 flex justify-between items-center"
+                                        className="text-left px-4 py-3 flex-grow"
                                     >
                                         <span className="font-medium text-slate-700">{p.projectName}</span>
-                                        <span className="text-sm text-slate-400">Owner</span>
+                                        <span className="text-sm text-slate-400 ml-2">
+                                            {p.ownerId === user?.uid ? 'Owner' : 'Shared with you'}
+                                        </span>
                                     </button>
+                                    {p.ownerId === user?.uid && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleShareProject(p.id); }}
+                                            className="px-4 py-3 text-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium border-l border-slate-100"
+                                        >
+                                            Share
+                                        </button>
+                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -128,6 +167,16 @@ export default function Dashboard() {
                     </button>
                 </div>
             </div>
+
+            {promptState?.isOpen && (
+                <PromptModal
+                    isOpen={promptState.isOpen}
+                    title={promptState.title}
+                    label={promptState.label}
+                    onConfirm={promptState.onConfirm}
+                    onCancel={() => setPromptState(null)}
+                />
+            )}
         </div>
     );
 }

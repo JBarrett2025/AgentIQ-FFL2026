@@ -715,7 +715,8 @@ const App: React.FC = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `site_data.json`;
+            const dateStr = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+            a.download = `site_data_${dateStr}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -739,7 +740,8 @@ const App: React.FC = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `deployed_site.html`;
+            const dateStr = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+            a.download = `deployed_site_${dateStr}.html`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -764,7 +766,8 @@ const App: React.FC = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `component.js`;
+            const dateStr = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+            a.download = `component_${dateStr}.js`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
