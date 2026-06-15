@@ -1,4 +1,4 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const { v2 } = require('@google-cloud/translate');
 const { GoogleGenAI, Type } = require('@google/genai');
