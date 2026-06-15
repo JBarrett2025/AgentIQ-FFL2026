@@ -1,16 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
-
-let ai: GoogleGenAI | null = null;
-
-const getAiClient = () => {
-    if (!ai) {
-        if (!import.meta.env.VITE_GEMINI_API_KEY) {
-            throw new Error("VITE_GEMINI_API_KEY environment variable not set");
-        }
-        ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-    }
-    return ai;
-};
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../services/firebase";
 
 /**
  * Generates content using the Gemini API.
@@ -20,30 +9,11 @@ const getAiClient = () => {
  */
 export const generateContent = async (prompt: string, config?: any): Promise<string> => {
     try {
-        const genAI = getAiClient();
-        const requestPayload: any = {
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        };
-
-        if (config) {
-            requestPayload.config = config;
-        }
-
-        const response = await genAI.models.generateContent(requestPayload);
-
-        const text = response.text;
-
-        if (!text) {
-            console.warn("Gemini API returned an empty response.");
-            return "";
-        }
-
-        return text.trim();
-
+        const geminiGenerateContent = httpsCallable(functions, 'geminiGenerateContent');
+        const response: any = await geminiGenerateContent({ prompt, config });
+        return response.data.text || "";
     } catch (error) {
         console.error("Error calling Gemini API:", error);
-        // Throw the raw error so the upstream caller can see the actual HTTP code or message
         throw error;
     }
 };
@@ -55,33 +25,9 @@ export const generateContent = async (prompt: string, config?: any): Promise<str
  */
 export const findVideoWithAi = async (topic: string): Promise<{ videoUrl: string; thumbnailUrl: string } | null> => {
     try {
-        const genAI = getAiClient();
-
-        const prompt = `Find a single, highly relevant YouTube video about "${topic}". Provide its full video URL and a high-quality thumbnail URL.`;
-
-        const response = await genAI.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        videoUrl: {
-                            type: Type.STRING,
-                            description: "The full URL of the YouTube video."
-                        },
-                        thumbnailUrl: {
-                            type: Type.STRING,
-                            description: "The URL of the video's high-quality thumbnail."
-                        }
-                    },
-                    required: ["videoUrl", "thumbnailUrl"]
-                }
-            }
-        });
-
-        const jsonString = response.text;
+        const geminiFindVideo = httpsCallable(functions, 'geminiFindVideo');
+        const response: any = await geminiFindVideo({ topic });
+        const jsonString = response.data.text;
         if (!jsonString) {
             console.warn("AI video search returned an empty response.");
             return null;
@@ -93,7 +39,6 @@ export const findVideoWithAi = async (topic: string): Promise<{ videoUrl: string
         }
 
         return null;
-
     } catch (error) {
         console.error("Error in AI video search:", error);
         throw new Error("Failed to find video with AI. Please try again.");
@@ -107,22 +52,9 @@ export const findVideoWithAi = async (topic: string): Promise<{ videoUrl: string
  */
 export const generateImageWithAi = async (prompt: string): Promise<string | null> => {
     try {
-        const genAI = getAiClient();
-
-        // This prompt embraces the AI's strength in creating logos on a white background for reliability.
-        const enhancedPrompt = `Create a clean, modern logo for the following concept: "${prompt}". The logo must be on a plain, solid white (#FFFFFF) background.`;
-
-        const response = await genAI.models.generateImages({
-            model: 'imagen-4.0-generate-001',
-            prompt: enhancedPrompt,
-            config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/png',
-                aspectRatio: '1:1',
-            },
-        });
-
-        const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+        const geminiGenerateImages = httpsCallable(functions, 'geminiGenerateImages');
+        const response: any = await geminiGenerateImages({ prompt });
+        const base64ImageBytes = response.data.base64ImageBytes;
 
         if (base64ImageBytes) {
             return `data:image/png;base64,${base64ImageBytes}`;
@@ -130,7 +62,6 @@ export const generateImageWithAi = async (prompt: string): Promise<string | null
 
         console.warn("AI image generation returned no images.");
         return null;
-
     } catch (error) {
         console.error("Error in AI image generation:", error);
         throw new Error("Failed to generate image with AI. Please try again.");
@@ -148,36 +79,9 @@ export const generateDesignSuggestionsWithAi = async (
     availableFonts: string[]
 ): Promise<{ color: string; font: string } | null> => {
     try {
-        const genAI = getAiClient();
-
-        const prompt = `Based on the topic "${topic}", suggest a single background color and a suitable font.
-        - The color must be a single, valid hexadecimal color code (e.g., #1A2B3C).
-        - The font must be one of the following options: ${availableFonts.join(', ')}.
-        Return ONLY the JSON object.`;
-
-        const response = await genAI.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        color: {
-                            type: Type.STRING,
-                            description: "A single hexadecimal color code, like #RRGGBB."
-                        },
-                        font: {
-                            type: Type.STRING,
-                            description: `One of the following fonts: ${availableFonts.join(', ')}.`
-                        }
-                    },
-                    required: ["color", "font"]
-                }
-            }
-        });
-
-        const jsonString = response.text;
+        const geminiGenerateDesignSuggestions = httpsCallable(functions, 'geminiGenerateDesignSuggestions');
+        const response: any = await geminiGenerateDesignSuggestions({ topic, availableFonts });
+        const jsonString = response.data.text;
         if (!jsonString) {
             console.warn("AI design suggestion returned an empty response.");
             return null;
@@ -195,7 +99,6 @@ export const generateDesignSuggestionsWithAi = async (
             console.warn("AI design suggestion returned invalid data:", result);
             return null;
         }
-
     } catch (error) {
         console.error("Error in AI design suggestion:", error);
         throw new Error("Failed to generate design suggestions with AI. Please try again.");
